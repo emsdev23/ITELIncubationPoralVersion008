@@ -6,7 +6,7 @@ import {
   FaPlus,
 } from "react-icons/fa";
 import Swal from "sweetalert2";
-import "./MentorClassificationTable.css"; // Reusing existing CSS or rename if needed
+import "./MentorClassificationTable.css";
 import api from "../Datafetching/api";
 import { useWriteAccess } from "../Datafetching/useWriteAccess";
 
@@ -29,8 +29,13 @@ import {
   Alert,
   Grid,
   styled,
+  Tooltip,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import ToggleOnIcon from "@mui/icons-material/ToggleOn"; // ON Icon
+import ToggleOffIcon from "@mui/icons-material/ToggleOff"; // OFF Icon
+import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // Status Active
+import CancelIcon from "@mui/icons-material/Cancel"; // Status Inactive
 
 // Import your reusable component
 import ReusableDataGrid from "../Datafetching/ReusableDataGrid";
@@ -44,11 +49,32 @@ const StyledBackdrop = styled(Backdrop)(({ theme }) => ({
 const ActionButton = styled(IconButton)(({ theme, color }) => ({
   margin: theme.spacing(0.5),
   backgroundColor:
-    color === "edit" ? theme.palette.primary.main : theme.palette.error.main,
+    color === "edit"
+      ? theme.palette.primary.main
+      : color === "on" // ON State -> Green
+      ? theme.palette.success.main
+      : color === "off" // OFF State -> Grey
+      ? theme.palette.grey[500]
+      : color === "delete" // Delete -> Red
+      ? theme.palette.error.main
+      : theme.palette.error.main,
   color: "white",
   "&:hover": {
     backgroundColor:
-      color === "edit" ? theme.palette.primary.dark : theme.palette.error.dark,
+      color === "edit"
+        ? theme.palette.primary.dark
+        : color === "on"
+        ? theme.palette.success.dark
+        : color === "off"
+        ? theme.palette.grey[700]
+        : color === "delete"
+        ? theme.palette.error.dark
+        : theme.palette.error.dark,
+  },
+  "&.disabled": {
+    backgroundColor: theme.palette.grey[300],
+    color: theme.palette.grey[500],
+    cursor: "not-allowed",
   },
 }));
 
@@ -56,7 +82,7 @@ const ActionButton = styled(IconButton)(({ theme, color }) => ({
 const formatDate = (dateStr) => {
   if (!dateStr) return "-";
   try {
-    // Handle standard ISO strings or Date objects (from the new Mentor Type API response example)
+    // Handle standard ISO strings or Date objects
     if (typeof dateStr === "string" && dateStr.includes("T")) {
       const date = new Date(dateStr);
       return date.toLocaleString("en-US", {
@@ -69,7 +95,7 @@ const formatDate = (dateStr) => {
       });
     }
     
-    // Handle legacy timestamp format from API (Existing logic)
+    // Handle legacy timestamp format from API
     if (Array.isArray(dateStr)) {
       dateStr = dateStr.map((num) => num.toString().padStart(2, "0")).join("");
     } else {
@@ -106,7 +132,6 @@ export default function MentorTypeTable() {
   const incUserid = sessionStorage.getItem("incuserid");
 
   // Use the custom hook to check write access
-  // Adjust the path string if permissions are different for Mentor Types
   const hasWriteAccess = useWriteAccess("/Incubation/Dashboard/MentorManagement");
 
   // States
@@ -128,6 +153,8 @@ export default function MentorTypeTable() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState({});
+  const [isToggling, setIsToggling] = useState({}); // State for Toggle Status
+  
   const [toast, setToast] = useState({
     open: false,
     message: "",
@@ -166,7 +193,80 @@ export default function MentorTypeTable() {
     } finally {
       setLoading(false);
     }
-  }, []); // Removed dependencies as payload is static per requirement
+  }, []);
+
+  // --- Handle Toggle Status (Enable/Disable) ---
+  const handleToggleStatus = useCallback(
+    (item) => {
+      const isCurrentlyEnabled = item.mentortypeadminstate === 1;
+      const actionText = isCurrentlyEnabled ? "disable" : "enable";
+      const newState = isCurrentlyEnabled ? 0 : 1;
+
+      Swal.fire({
+        title: "Are you sure?",
+        text: `Do you want to ${actionText} this mentor type?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: isCurrentlyEnabled ? "#d33" : "#3085d6",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: `Yes, ${actionText} it!`,
+        cancelButtonText: "Cancel",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          setIsToggling((prev) => ({
+            ...prev,
+            [item.mentortypeid]: true,
+          }));
+
+          // Payload structure sending full object to prevent nulling other fields
+          const bodyPayload = {
+            mentortypeid: item.mentortypeid,
+            mentortypename: item.mentortypename,
+            mentortypedescription: item.mentortypedescription,
+            mentortypeadminstate: newState,
+            mentortypemodifiedby: userId || "1",
+          };
+
+          api
+            .post("/updateMentorType", bodyPayload, {
+              headers: {
+                "X-Module": "Mentor Type",
+                "X-Action": "Update Mentor Type Status",
+              },
+            })
+            .then((response) => {
+              if (response.data.statusCode === 200) {
+                Swal.fire(
+                  "Success!",
+                  `Mentor type ${actionText}d successfully!`,
+                  "success"
+                );
+                fetchMentorTypes();
+              } else {
+                throw new Error(
+                  response.data.message || `Failed to ${actionText} mentor type`
+                );
+              }
+            })
+            .catch((err) => {
+              console.error(`Error ${actionText}ing mentor type:`, err);
+              Swal.fire(
+                "Error",
+                `Failed to ${actionText}: ${err.message}`,
+                "error"
+              );
+            })
+            .finally(() => {
+              setIsToggling((prev) => ({
+                ...prev,
+                [item.mentortypeid]: false,
+              }));
+            });
+        }
+      });
+    },
+    [userId, fetchMentorTypes]
+  );
 
   const createMentorType = useCallback(async () => {
     try {
@@ -197,7 +297,8 @@ export default function MentorTypeTable() {
         mentortypeid: editingId,
         mentortypename: formData.name,
         mentortypedescription: formData.description,
-        mentortypeadminstate: 1,
+        // Use form state to allow re-enabling via edit, or preserve current state
+        mentortypeadminstate: formData.adminState ? 1 : 0,
         mentortypemodifiedby: userId || "1",
       };
 
@@ -301,12 +402,22 @@ export default function MentorTypeTable() {
         Swal.fire("Access Denied", "You do not have permission to edit mentor types.", "warning");
         return;
       }
+      // Prevent editing if disabled
+      if (item.mentortypeadminstate === 0) {
+        Swal.fire(
+          "Restricted",
+          "Cannot edit a disabled mentor type. Please enable it first.",
+          "warning"
+        );
+        return;
+      }
+
       setDialogType("edit");
       setEditingId(item.mentortypeid);
       setFormData({
         name: item.mentortypename || "",
         description: item.mentortypedescription || "",
-        adminState: item.mentortypeadminstate === 1, // Default to true if missing
+        adminState: item.mentortypeadminstate === 1,
       });
       setFieldErrors({});
       setOpenDialog(true);
@@ -417,10 +528,40 @@ export default function MentorTypeTable() {
         sortable: true,
       },
       {
+        field: "mentortypeadminstate",
+        headerName: "Status",
+        width: 120,
+        sortable: true,
+        renderCell: (params) => {
+          if (!params?.row) return "-";
+          const status = params.row.mentortypeadminstate;
+          const isActive = status === 1 || status === undefined;
+
+          return (
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <IconButton
+                size="small"
+                sx={{
+                  mr: 0.5,
+                  color: isActive ? "success.main" : "error.main",
+                  cursor: "default",
+                }}
+              >
+                {isActive ? <CheckCircleIcon fontSize="small" /> : <CancelIcon fontSize="small" />}
+              </IconButton>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                {isActive ? "Active" : "Inactive"}
+              </Typography>
+            </Box>
+          );
+        },
+      },
+      {
         field: "createdname",
         headerName: "Created By",
         width: 150,
         sortable: true,
+        renderCell: (params) => params?.row?.createdname || params?.row?.mentortypecreatedby || "-",
       },
       {
         field: "mentortypecreatedtime",
@@ -435,6 +576,7 @@ export default function MentorTypeTable() {
         headerName: "Modified By",
         width: 150,
         sortable: true,
+        renderCell: (params) => params?.row?.modifiedname || params?.row?.mentortypemodifiedby || "-",
       },
       {
         field: "mentortypemodifiedtime",
@@ -449,37 +591,53 @@ export default function MentorTypeTable() {
             {
               field: "actions",
               headerName: "Actions",
-              width: 150,
+              width: 180, // Increased width for 3 buttons
               sortable: false,
               filterable: false,
               renderCell: (params) => {
                 if (!params?.row) return null;
+                
+                const isDisabled = params.row.mentortypeadminstate === 0;
+                const isCurrentlyEnabled = params.row.mentortypeadminstate === 1;
+
                 return (
                   <Box>
+                    {/* Toggle Status Button */}
+                    <ActionButton
+                      color={isCurrentlyEnabled ? "on" : "off"}
+                      onClick={() => handleToggleStatus(params.row)}
+                      disabled={
+                        isSaving ||
+                        isDeleting[params.row.mentortypeid] ||
+                        isToggling[params.row.mentortypeid]
+                      }
+                      title={isCurrentlyEnabled ? "Disable" : "Enable"}
+                    >
+                      {isToggling[params.row.mentortypeid] ? (
+                        <CircularProgress size={16} color="inherit" />
+                      ) : isCurrentlyEnabled ? (
+                        <ToggleOnIcon fontSize="small" />
+                      ) : (
+                        <ToggleOffIcon fontSize="small" />
+                      )}
+                    </ActionButton>
+
+                    {/* Edit Button */}
                     <ActionButton
                       color="edit"
                       onClick={() => openEditModal(params.row)}
                       disabled={
-                        isSaving || isDeleting[params.row.mentortypeid]
+                        isSaving ||
+                        isDeleting[params.row.mentortypeid] ||
+                        isDisabled || // Disabled if state is 0
+                        isToggling[params.row.mentortypeid]
                       }
                       title="Edit"
+                      className={isDisabled ? "disabled" : ""}
                     >
                       <FaEdit />
                     </ActionButton>
-                    <ActionButton
-                      color="delete"
-                      onClick={() => handleDelete(params.row)}
-                      disabled={
-                        isSaving || isDeleting[params.row.mentortypeid]
-                      }
-                      title="Delete"
-                    >
-                      {isDeleting[params.row.mentortypeid] ? (
-                        <CircularProgress size={16} color="inherit" />
-                      ) : (
-                        <FaTrash />
-                      )}
-                    </ActionButton>
+
                   </Box>
                 );
               },
@@ -487,7 +645,7 @@ export default function MentorTypeTable() {
           ]
         : []),
     ],
-    [hasWriteAccess, isSaving, isDeleting, openEditModal, handleDelete]
+    [hasWriteAccess, isSaving, isDeleting, isToggling, openEditModal, handleDelete, handleToggleStatus]
   );
 
   const exportConfig = useMemo(
@@ -651,7 +809,7 @@ export default function MentorTypeTable() {
       </Snackbar>
 
       {/* Loading Overlay */}
-      <StyledBackdrop open={isSaving}>
+      <StyledBackdrop open={isSaving || Object.values(isToggling).some(Boolean)}>
         <Box
           sx={{
             display: "flex",
@@ -661,7 +819,11 @@ export default function MentorTypeTable() {
         >
           <CircularProgress color="inherit" />
           <Typography sx={{ mt: 2 }}>
-            {dialogType === "add" ? "Adding mentor type..." : "Updating mentor type..."}
+             {Object.values(isToggling).some(Boolean)
+              ? "Updating status..."
+              : dialogType === "add"
+              ? "Adding mentor type..."
+              : "Updating mentor type..."}
           </Typography>
         </Box>
       </StyledBackdrop>

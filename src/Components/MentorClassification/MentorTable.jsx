@@ -37,8 +37,13 @@ import {
   Snackbar,
   Alert,
   styled,
+  Tooltip,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import ToggleOnIcon from "@mui/icons-material/ToggleOn"; // ON Icon
+import ToggleOffIcon from "@mui/icons-material/ToggleOff"; // OFF Icon
+import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // Status Active
+import CancelIcon from "@mui/icons-material/Cancel"; // Status Inactive
 
 // Import your reusable component
 import ReusableDataGrid from "../Datafetching/ReusableDataGrid";
@@ -52,11 +57,27 @@ const StyledBackdrop = styled(Backdrop)(({ theme }) => ({
 const ActionButton = styled(IconButton)(({ theme, color }) => ({
   margin: theme.spacing(0.5),
   backgroundColor:
-    color === "edit" ? theme.palette.primary.main : theme.palette.error.main,
+    color === "edit"
+      ? theme.palette.primary.main
+      : color === "on" // ON State -> Green
+      ? theme.palette.success.main
+      : color === "off" // OFF State -> Grey
+      ? theme.palette.grey[500]
+      : color === "delete" // Delete -> Red
+      ? theme.palette.error.main
+      : theme.palette.error.main,
   color: "white",
   "&:hover": {
     backgroundColor:
-      color === "edit" ? theme.palette.primary.dark : theme.palette.error.dark,
+      color === "edit"
+        ? theme.palette.primary.dark
+        : color === "on"
+        ? theme.palette.success.dark
+        : color === "off"
+        ? theme.palette.grey[700]
+        : color === "delete"
+        ? theme.palette.error.dark
+        : theme.palette.error.dark,
   },
 }));
 
@@ -101,9 +122,11 @@ export default function MentorTable() {
     createdBy: userId || "1",
   });
 
-  // UI State Management (Similar to TrainingModule)
+  // UI State Management
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState({});
+  const [isToggling, setIsToggling] = useState({}); // State for Toggle Status
+
   const [toast, setToast] = useState({
     open: false,
     message: "",
@@ -164,6 +187,89 @@ export default function MentorTable() {
       console.error("Error fetching dropdown options:", err);
     }
   }, [userId, incUserid]);
+
+  // --- Handle Toggle Status (Enable/Disable) ---
+  const handleToggleStatus = useCallback(
+    (mentor) => {
+      const isCurrentlyEnabled = mentor.mentordetsadminstate === 1;
+      const actionText = isCurrentlyEnabled ? "disable" : "enable";
+      const newState = isCurrentlyEnabled ? 0 : 1;
+
+      Swal.fire({
+        title: "Are you sure?",
+        text: `Do you want to ${actionText} this mentor?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: isCurrentlyEnabled ? "#d33" : "#3085d6",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: `Yes, ${actionText} it!`,
+        cancelButtonText: "Cancel",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          setIsToggling((prev) => ({
+            ...prev,
+            [mentor.mentordetsid]: true,
+          }));
+
+          // Payload structure mirroring the full object
+          const bodyPayload = {
+            mentordetsincubatorid: mentor.mentordetsincubatorid,
+            mentordetsmnttypeid: mentor.mentordetsmnttypeid,
+            mentordetsclasssetid: mentor.mentordetsclasssetid,
+            mentordetsname: mentor.mentordetsname,
+            mentordetsdesign: mentor.mentordetsdesign,
+            mentordetsphone: mentor.mentordetsphone,
+            mentordetsaddress: mentor.mentordetsaddress,
+            mentordetsemail: mentor.mentordetsemail,
+            mentordetsdomain: mentor.mentordetsdomain,
+            mentordetspastexp: mentor.mentordetspastexp,
+            mentordetslinkedin: mentor.mentordetslinkedin,
+            mentordetswebsite: mentor.mentordetswebsite,
+            mentordetsblog: mentor.mentordetsblog,
+            mentordetsimagepath: mentor.mentordetsimagepath,
+            mentordetstimecommitment: mentor.mentordetstimecommitment,
+            mentordetsprevstupmentor: mentor.mentordetsprevstupmentor,
+            mentordetscomment: mentor.mentordetscomment,
+            mentordetsgender: mentor.mentordetsgender,
+            mentordetsadminstate: newState,
+            mentordetsid: mentor.mentordetsid,
+            mentordetsmodifiedby: userId || "1",
+          };
+
+          // Using api.post instead of fetch
+          api.post("/updateMentor", bodyPayload, {
+             headers: {
+               "X-Module": "Mentor Management",
+               "X-Action": "Update Mentor Status",
+             },
+          })
+            .then((response) => {
+              if (response.data.statusCode === 200) {
+                Swal.fire(
+                  "Success!",
+                  `Mentor ${actionText}d successfully!`,
+                  "success"
+                );
+                fetchMentors();
+              } else {
+                throw new Error(response.data.message || `Failed to ${actionText} mentor`);
+              }
+            })
+            .catch((err) => {
+              console.error(`Error ${actionText}ing mentor:`, err);
+              Swal.fire("Error", `Failed to ${actionText}: ${err.message}`, "error");
+            })
+            .finally(() => {
+              setIsToggling((prev) => ({
+                ...prev,
+                [mentor.mentordetsid]: false,
+              }));
+            });
+        }
+      });
+    },
+    [userId, fetchMentors]
+  );
 
   const createMentor = useCallback(async () => {
     try {
@@ -226,7 +332,7 @@ export default function MentorTable() {
         mentordetsprevstupmentor: formData.prevStupMentor,
         mentordetscomment: formData.comment,
         mentordetsgender: formData.gender,
-        mentordetsadminstate: 1,
+        mentordetsadminstate: formData.mentordetsadminstate ?? 1, // Preserve state or default active
         mentordetsid: editingId,
         mentordetsmodifiedby: userId || "1",
       };
@@ -339,6 +445,7 @@ export default function MentorTable() {
         timeCommitment: item.mentordetstimecommitment || null,
         prevStupMentor: item.mentordetsprevstupmentor || "Yes",
         comment: item.mentordetscomment || "",
+        mentordetsadminstate: item.mentordetsadminstate, // Preserve state in form
         createdBy: item.mentordetscreatedby,
       });
       setOpenDialog(true);
@@ -477,6 +584,35 @@ export default function MentorTable() {
         sortable: true,
       },
       {
+        field: "mentordetsadminstate",
+        headerName: "Status",
+        width: 120,
+        sortable: true,
+        renderCell: (params) => {
+          if (!params?.row) return "-";
+          const status = params.row.mentordetsadminstate;
+          const isActive = status === 1 || status === undefined;
+
+          return (
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <IconButton
+                size="small"
+                sx={{
+                  mr: 0.5,
+                  color: isActive ? "success.main" : "error.main",
+                  cursor: "default",
+                }}
+              >
+                {isActive ? <CheckCircleIcon fontSize="small" /> : <CancelIcon fontSize="small" />}
+              </IconButton>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                {isActive ? "Active" : "Inactive"}
+              </Typography>
+            </Box>
+          );
+        },
+      },
+      {
         field: "createdname",
         headerName: "Created By",
         width: 150,
@@ -488,33 +624,49 @@ export default function MentorTable() {
             {
               field: "actions",
               headerName: "Actions",
-              width: 120,
+              width: 150, // Increased width for 3 buttons
               sortable: false,
               filterable: false,
               renderCell: (params) => {
                 if (!params?.row) return null;
+                
+                const isCurrentlyEnabled = params.row.mentordetsadminstate === 1;
+
                 return (
                   <Box>
+                    {/* Toggle Status Button */}
+                    <ActionButton
+                      color={isCurrentlyEnabled ? "on" : "off"}
+                      onClick={() => handleToggleStatus(params.row)}
+                      disabled={
+                        isSaving ||
+                        isDeleting[params.row.mentordetsid] ||
+                        isToggling[params.row.mentordetsid]
+                      }
+                      title={isCurrentlyEnabled ? "Disable" : "Enable"}
+                    >
+                      {isToggling[params.row.mentordetsid] ? (
+                        <CircularProgress size={16} color="inherit" />
+                      ) : isCurrentlyEnabled ? (
+                        <ToggleOnIcon fontSize="small" />
+                      ) : (
+                        <ToggleOffIcon fontSize="small" />
+                      )}
+                    </ActionButton>
+
                     <ActionButton
                       color="edit"
                       onClick={() => openEditModal(params.row)}
-                      disabled={isSaving || isDeleting[params.row.mentordetsid]}
+                      disabled={
+                        isSaving ||
+                        isDeleting[params.row.mentordetsid] ||
+                        isToggling[params.row.mentordetsid]
+                      }
                       title="Edit"
                     >
                       <FaEdit />
                     </ActionButton>
-                    <ActionButton
-                      color="delete"
-                      onClick={() => handleDelete(params.row)}
-                      disabled={isSaving || isDeleting[params.row.mentordetsid]}
-                      title="Delete"
-                    >
-                      {isDeleting[params.row.mentordetsid] ? (
-                        <CircularProgress size={16} color="inherit" />
-                      ) : (
-                        <FaTrash />
-                      )}
-                    </ActionButton>
+
                   </Box>
                 );
               },
@@ -522,7 +674,7 @@ export default function MentorTable() {
           ]
         : []),
     ],
-    [hasWriteAccess, isSaving, isDeleting, openEditModal, handleDelete]
+    [hasWriteAccess, isSaving, isDeleting, isToggling, openEditModal, handleDelete, handleToggleStatus]
   );
 
   const exportConfig = useMemo(
@@ -545,6 +697,7 @@ export default function MentorTable() {
         Address: item.mentordetsaddress || "",
         "Time Commitment": item.mentordetstimecommitment || "",
         "Prev Startup Mentor": item.mentordetsprevstupmentor || "",
+        Status: item.mentordetsadminstate === 1 ? "Active" : "Inactive",
       })),
     []
   );
@@ -895,7 +1048,7 @@ export default function MentorTable() {
       </Snackbar>
 
       {/* Loading Overlay */}
-      <StyledBackdrop open={isSaving}>
+      <StyledBackdrop open={isSaving || Object.values(isToggling).some(Boolean)}>
         <Box
           sx={{
             display: "flex",
@@ -905,7 +1058,11 @@ export default function MentorTable() {
         >
           <CircularProgress color="inherit" />
           <Typography sx={{ mt: 2 }}>
-            {dialogType === "add" ? "Adding mentor..." : "Updating mentor..."}
+             {Object.values(isToggling).some(Boolean)
+              ? "Updating status..."
+              : dialogType === "add"
+              ? "Adding mentor..."
+              : "Updating mentor..."}
           </Typography>
         </Box>
       </StyledBackdrop>

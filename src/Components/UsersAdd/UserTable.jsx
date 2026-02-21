@@ -32,7 +32,8 @@ import EditIcon from "@mui/icons-material/Edit";
 
 import ToggleOnIcon from "@mui/icons-material/ToggleOn"; // ON Icon (Green Pill)
 import ToggleOffIcon from "@mui/icons-material/ToggleOff"; // OFF Icon (Grey Pill)
-
+import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // Status Active
+import CancelIcon from "@mui/icons-material/Cancel"; // Status Inactive
 // Styled components
 const StyledPaper = styled(Paper)(({ theme }) => ({
   width: "100%",
@@ -377,18 +378,26 @@ export default function UserTable() {
         width: 120,
         sortable: true,
         renderCell: (params) => {
-          if (!params || !params.row) return "-";
-          const isEnabled = params.row.usersadminstate === 1;
+          if (!params?.row) return "-";
+          const status = params.row.usersadminstate;
+          const isActive = status === 1 || status === undefined;
+
           return (
-            <Chip
-              label={isEnabled ? "Enabled" : "Disabled"}
-              size="small"
-              color={isEnabled ? "success" : "default"}
-              sx={{
-                color: isEnabled ? "white" : "text.secondary",
-                fontWeight: "bold",
-              }}
-            />
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <IconButton
+                size="small"
+                sx={{
+                  mr: 0.5,
+                  color: isActive ? "success.main" : "error.main",
+                  cursor: "default",
+                }}
+              >
+                {isActive ? <CheckCircleIcon fontSize="small" /> : <CancelIcon fontSize="small" />}
+              </IconButton>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                {isActive ? "Active" : "Inactive"}
+              </Typography>
+            </Box>
           );
         },
       },

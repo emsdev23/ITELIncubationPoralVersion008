@@ -7,7 +7,7 @@ import styles from "../Navbar.module.css";
 import { getChatLists, getChatDetails, sendMessage } from "./chatService";
 import "./ChatApp.css";
 import ITELLogo from "../../assets/ITEL_Logo.png";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { MessageSquare, MoveLeft, History } from "lucide-react";
 
 const ChatApp = () => {
@@ -27,6 +27,8 @@ const ChatApp = () => {
   });
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
   const chatListIntervalRef = useRef(null);
   const messageIntervalRef = useRef(null);
   const messageIdsRef = useRef(new Map());
@@ -59,19 +61,13 @@ const ChatApp = () => {
   const fetchMessages = useCallback(
     async (chatId) => {
       try {
-        console.log(
-          "Fetching messages for chatId:",
-          chatId,
-          "and userId:",
-          currentUser.id
-        );
+        console.log("Fetching messages for chatId:", chatId);
         const data = await getChatDetails(
           currentUser.id,
           chatId,
           currentUser.incUserid
         );
-        console.log("Messages data:", data);
-
+        
         const newMessageIds = new Set(data.map((msg) => msg.chatdetailsrecid));
         messageIdsRef.current.set(chatId, newMessageIds);
 
@@ -138,7 +134,6 @@ const ChatApp = () => {
 
           const latestMessage = newMessages[newMessages.length - 1];
           
-          // Update the chat list and sort it so the updated chat moves to the top
           setChatLists((prev) => {
             const updatedList = prev.map((chat) =>
               chat.chatlistrecid === chatId
@@ -168,7 +163,6 @@ const ChatApp = () => {
       await fetchChatLists();
       setLoading(false);
     };
-
     fetchData();
   }, [fetchChatLists]);
 
@@ -185,14 +179,16 @@ const ChatApp = () => {
     };
   }, [fetchChatLists]);
 
-  // Set up message polling for the selected chat every 1 second
+  // Set up message polling for the selected chat
   useEffect(() => {
     if (selectedChat) {
+      // Initial fetch
       fetchMessages(selectedChat.chatlistrecid);
 
+      // Polling: Call getChatDetails every 3 seconds (Changed from 5000000)
       messageIntervalRef.current = setInterval(() => {
         checkForNewMessages(selectedChat.chatlistrecid);
-      }, 5000000);
+      }, 3000); 
 
       return () => {
         if (messageIntervalRef.current) {
@@ -215,7 +211,38 @@ const ChatApp = () => {
     }
   }, [chatLists, newChatId]);
 
-  // Manual refresh handler - kept for internal use but removed from UI
+  // ============================================================
+  // FIX: HANDLE ROUTING FROM TRAINING TABLE & PREVENT SNAP-BACK
+  // ============================================================
+  useEffect(() => {
+    const urlChatId = searchParams.get("id");
+
+    if (urlChatId) {
+      // Ensure we have the list to search
+      if (chatLists.length > 0) {
+        const foundChat = chatLists.find(
+          (chat) => chat.chatlistrecid == urlChatId
+        );
+
+        if (foundChat) {
+          setSelectedChat(foundChat);
+          
+          // CRITICAL FIX: Navigate to the clean URL immediately.
+          // This removes '?id=...' so that future list refreshes 
+          // do NOT force the user back to this chat.
+          navigate("/Incubation/Dashboard/Chats", { replace: true });
+        } else {
+          // If not found (maybe new chat), refresh list to try again
+          fetchChatLists(); 
+        }
+      } else {
+        fetchChatLists();
+      }
+    }
+  }, [chatLists, searchParams, fetchChatLists, navigate]);
+  // ============================================================
+
+
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -228,21 +255,17 @@ const ChatApp = () => {
     }
   };
 
-  // Handle history button click - navigate to history page
   const handleHistory = () => {
-    // Store the current user in sessionStorage to be used by ChatHistory component
     sessionStorage.setItem("currentUser", JSON.stringify(currentUser));
     navigate("/Incubation/Dashboard/ChatHistory");
   };
 
-  // *** CORRECTED handleSendMessage FUNCTION ***
   const handleSendMessage = async (messageContent, attachment, replyToId) => {
     try {
       let attachmentBase64 = null;
       let fileName = "";
 
       if (attachment) {
-        // Convert file to base64
         attachmentBase64 = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => {
@@ -252,33 +275,24 @@ const ChatApp = () => {
           reader.onerror = (error) => reject(error);
           reader.readAsDataURL(attachment);
         });
-
-        // Store the original filename separately
         fileName = attachment.name;
       }
 
-      // Get the current user ID and chat list participants
       const userId = currentUser.id;
       const chatListFrom = selectedChat.chatlistfrom;
       const chatListTo = selectedChat.chatlistto;
-
-      // Determine the sender and recipient based on the current user's role in the chat
       let messageFrom, messageTo;
 
-      // *** IMPLEMENTING THE CORRECT LOGIC ***
       if (userId == chatListFrom) {
-        // If current user is the 'from' participant in the chat list
-        messageFrom = userId; // They are the sender
-        messageTo = chatListTo; // The other person is the recipient
+        messageFrom = userId;
+        messageTo = chatListTo;
       } else if (userId == chatListTo) {
-        // If current user is the 'to' participant in the chat list
-        messageFrom = userId; // They are the sender
-        messageTo = chatListFrom; // The other person is the recipient
+        messageFrom = userId;
+        messageTo = chatListFrom;
       } else {
-        // This shouldn't happen in a one-on-one chat, but handle it just in case
         console.error("Current user is not a participant in this chat");
         alert("Error: You are not a participant in this chat.");
-        return; // Stop sending the message
+        return;
       }
 
       const messageData = {
@@ -296,8 +310,6 @@ const ChatApp = () => {
         messageData.chatdetailsreplyfor = replyToId;
       }
 
-      console.log("Sending message with data:", messageData); // For debugging
-
       const newMessage = await sendMessage(messageData);
 
       setMessages((prev) => ({
@@ -313,7 +325,6 @@ const ChatApp = () => {
       currentIds.add(newMessage.chatdetailsrecid);
       messageIdsRef.current.set(selectedChat.chatlistrecid, currentIds);
 
-      // Update chat list and sort to move this chat to the top
       setChatLists((prev) => {
         const updatedList = prev.map((chat) =>
           chat.chatlistrecid === selectedChat.chatlistrecid
@@ -327,7 +338,6 @@ const ChatApp = () => {
         return sortChatsByTime(updatedList);
       });
 
-      // Optional: Refetch messages after a short delay to ensure the latest state
       setTimeout(() => {
         fetchMessages(selectedChat.chatlistrecid);
       }, 1000);
@@ -398,7 +408,7 @@ const ChatApp = () => {
               currentUser={currentUser}
               fileInputRef={fileInputRef}
               chatLists={chatLists}
-              onMessageRead={handleMessageRead} // Pass the handleMessageRead function
+              onMessageRead={handleMessageRead}
             />
           ) : (
             <div className="no-chat-selected">

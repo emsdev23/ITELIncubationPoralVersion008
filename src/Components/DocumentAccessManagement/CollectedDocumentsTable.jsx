@@ -4,7 +4,7 @@ import { Download, Trash2, Eye, Edit, Shield } from "lucide-react";
 import * as XLSX from "xlsx";
 import { IPAdress } from "../Datafetching/IPAdrees";
 import ReusableDataGrid from "../Datafetching/ReusableDataGrid";
-import api from "../Datafetching/api"; // Import the reusable component
+import api from "../Datafetching/api";
 
 // Material UI imports
 import {
@@ -70,7 +70,7 @@ export default function CollectedDocumentsTable() {
   const API_BASE_URL = IPAdress;
   const isXLSXAvailable = !!XLSX;
 
-  // --- ALL STATE VARIABLES (UNCHANGED) ---
+  // --- STATE VARIABLES ---
   const [allDocuments, setAllDocuments] = useState([]);
   const [allDocumentsLoading, setAllDocumentsLoading] = useState(true);
   const [allDocumentsError, setAllDocumentsError] = useState(null);
@@ -101,14 +101,12 @@ export default function CollectedDocumentsTable() {
   const [editSelectedUser, setEditSelectedUser] = useState("");
   const [editFromDate, setEditFromDate] = useState(new Date());
   const [editToDate, setEditToDate] = useState(new Date());
-  const [editExpiryDate, setEditExpiryDate] = useState(new Date());
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const [editRolesLoading, setEditRolesLoading] = useState(false);
   const [editUsersLoading, setEditUsersLoading] = useState(false);
 
-  // --- API CALLING FUNCTIONS (CONVERTED) ---
+  // --- API CALLING FUNCTIONS ---
 
-  // Fetch documents
   const fetchDocuments = async () => {
     setAllDocumentsLoading(true);
     setDocumentsWithAccessLoading(true);
@@ -116,8 +114,7 @@ export default function CollectedDocumentsTable() {
     setDocumentsWithAccessError(null);
 
     try {
-      // CHANGE 1: Use api.post for encryption
-      const collectedDocsResponse = await api.post(
+      const collectedDocsResponse = api.post(
         "/resources/generic/getcollecteddocuments",
         { userId: userId || "8", incUserId: incUserid || "35" },
         {
@@ -129,8 +126,7 @@ export default function CollectedDocumentsTable() {
         }
       );
 
-      // CHANGE 2: Use api.post for encryption
-      const accessDetailsResponse = await api.post(
+      const accessDetailsResponse = api.post(
         "/resources/generic/getdocaccessdetails",
         { userId: userId || "1", incUserId: incUserid || "1" },
         {
@@ -142,7 +138,6 @@ export default function CollectedDocumentsTable() {
         }
       );
 
-      // CHANGE 3: Use await Promise.all with try/catch
       const [collectedData, accessData] = await Promise.all([
         collectedDocsResponse,
         accessDetailsResponse,
@@ -158,10 +153,8 @@ export default function CollectedDocumentsTable() {
       const collectedDocs = collectedData.data.data || [];
       const accessDetails = accessData.data.data || [];
 
-      // Set state for ALL documents table
       setAllDocuments(collectedDocs);
 
-      // Merge data for WITH ACCESS table
       const documentsWithAccessMerged = collectedDocs
         .map((doc) => {
           const accessDetail = accessDetails.find(
@@ -171,24 +164,21 @@ export default function CollectedDocumentsTable() {
           );
           return { ...doc, accessDetails: accessDetail || null };
         })
-        .filter((doc) => doc.accessDetails !== null); // Keep only those with access
+        .filter((doc) => doc.accessDetails !== null);
 
       setDocumentsWithAccess(documentsWithAccessMerged);
     } catch (err) {
-      // CHANGE 4: Error handling in catch block
       console.error("Error fetching documents:", err);
       const errorMessage =
         err.message || "Failed to load documents. Please try again.";
       setAllDocumentsError(errorMessage);
       setDocumentsWithAccessError(errorMessage);
     } finally {
-      // CHANGE 5: Cleanup in finally block
       setAllDocumentsLoading(false);
       setDocumentsWithAccessLoading(false);
     }
   };
 
-  // Fetch roles
   const fetchRoles = async () => {
     setRolesLoading(true);
     try {
@@ -204,7 +194,7 @@ export default function CollectedDocumentsTable() {
       );
       if (response.data.statusCode === 200) {
         const filteredRoles = response.data.data.filter((role) =>
-          [1, 2, 4, 7].includes(role.rolesrecid)
+          [1, 2, 7].includes(role.rolesrecid)
         );
         setRoles(filteredRoles);
       } else {
@@ -222,7 +212,6 @@ export default function CollectedDocumentsTable() {
     }
   };
 
-  // Fetch users based on selected role
   const fetchUsers = async (roleId) => {
     if (!roleId) return;
     setUsersLoading(true);
@@ -257,8 +246,7 @@ export default function CollectedDocumentsTable() {
     }
   };
 
-  // Fetch roles for edit modal
-  const fetchEditRoles = async () => {
+  const fetchEditRoles = async (currentRoleId = null) => {
     setEditRolesLoading(true);
     try {
       const response = await api.post(
@@ -272,9 +260,27 @@ export default function CollectedDocumentsTable() {
         }
       );
       if (response.data.statusCode === 200) {
-        const filteredRoles = response.data.data.filter((role) =>
+        // Standard filter
+        let filteredRoles = response.data.data.filter((role) =>
           [1, 2, 4, 7].includes(role.rolesrecid)
         );
+
+        // FIX: If the role attached to the document is not in the filtered list (e.g. ID 0 or 12),
+        // add it back manually so the dropdown shows the current value.
+        if (currentRoleId) {
+          const exists = filteredRoles.find(
+            (r) => r.rolesrecid.toString() === currentRoleId.toString()
+          );
+          if (!exists) {
+            const orphanRole = response.data.data.find(
+              (r) => r.rolesrecid.toString() === currentRoleId.toString()
+            );
+            if (orphanRole) {
+              filteredRoles.push(orphanRole);
+            }
+          }
+        }
+
         setEditRoles(filteredRoles);
       } else {
         throw new Error(response.data.message || "Failed to fetch roles");
@@ -291,8 +297,7 @@ export default function CollectedDocumentsTable() {
     }
   };
 
-  // Fetch users based on selected role for edit modal
-  const fetchEditUsers = async (roleId) => {
+  const fetchEditUsers = async (roleId, currentUserId = null) => {
     if (!roleId) return;
     setEditUsersLoading(true);
     try {
@@ -307,9 +312,28 @@ export default function CollectedDocumentsTable() {
         }
       );
       if (response.data.statusCode === 200) {
-        const filteredUsers = response.data.data.filter(
+        // Filter by role
+        let filteredUsers = response.data.data.filter(
           (user) => user.usersrolesrecid === parseInt(roleId)
         );
+
+        // FIX: If the user attached to the document is not in this filtered list
+        // (e.g. they changed roles, or the user object role ID is a string),
+        // add them back manually so the dropdown shows the current user.
+        if (currentUserId) {
+          const exists = filteredUsers.find(
+            (u) => u.usersrecid.toString() === currentUserId.toString()
+          );
+          if (!exists) {
+            const orphanUser = response.data.data.find(
+              (u) => u.usersrecid.toString() === currentUserId.toString()
+            );
+            if (orphanUser) {
+              filteredUsers.push(orphanUser);
+            }
+          }
+        }
+
         setEditUsers(filteredUsers);
       } else {
         throw new Error(response.data.message || "Failed to fetch users");
@@ -326,7 +350,6 @@ export default function CollectedDocumentsTable() {
     }
   };
 
-  // Handle grant access submission
   const handleGrantAccess = async () => {
     if (!selectedDocument || !selectedRole || !selectedUser) {
       Swal.fire({
@@ -406,7 +429,6 @@ export default function CollectedDocumentsTable() {
     }
   };
 
-  // Handle update access submission
   const handleUpdateAccess = async () => {
     if (!selectedAccessRecord || !editSelectedRole || !editSelectedUser) {
       Swal.fire({
@@ -422,7 +444,6 @@ export default function CollectedDocumentsTable() {
     const currentUser = editSelectedUser;
     const currentFromDate = editFromDate;
     const currentToDate = editToDate;
-    const currentExpiryDate = editExpiryDate;
 
     setEditAccessModalOpen(false);
 
@@ -444,9 +465,10 @@ export default function CollectedDocumentsTable() {
           {
             docaccessrecid: currentAccessRecord.accessDetails.docaccessrecid,
             docaccessincubateesrecid: incubateeId || "35",
+            // Mapping the state (which came from usersrolesrecid) back to the expected backend key
             docaccessrolerecid: currentRole,
             docaccesscatrecid: currentAccessRecord.collecteddoccatrecid,
-            docaccessexpirydate: currentExpiryDate.toISOString().split("T")[0],
+            docaccessexpirydate: currentToDate.toISOString().split("T")[0],
             docaccessadminstate: "1",
             docaccessuserrecid: currentUser,
             docaccessdocsubcatid: currentAccessRecord.collecteddocsubcatrecid,
@@ -483,12 +505,10 @@ export default function CollectedDocumentsTable() {
       setEditSelectedUser(currentUser);
       setEditFromDate(currentFromDate);
       setEditToDate(currentToDate);
-      setEditExpiryDate(currentExpiryDate);
       setEditAccessModalOpen(true);
     }
   };
 
-  // Handle delete action
   const handleDelete = async (row) => {
     const accessRecId = row.accessDetails?.docaccessrecid;
     if (!accessRecId) {
@@ -548,7 +568,7 @@ export default function CollectedDocumentsTable() {
     }
   };
 
-  // --- EVENT HANDLER FUNCTIONS (UNCHANGED) ---
+  // --- EVENT HANDLER FUNCTIONS ---
   const handleRoleChange = (event) => {
     const roleId = event.target.value;
     setSelectedRole(roleId);
@@ -560,7 +580,7 @@ export default function CollectedDocumentsTable() {
     const roleId = event.target.value;
     setEditSelectedRole(roleId);
     setEditSelectedUser("");
-    fetchEditUsers(roleId);
+    fetchEditUsers(roleId, editSelectedUser);
   };
 
   const handleOpenGrantAccessModal = (document) => {
@@ -580,29 +600,40 @@ export default function CollectedDocumentsTable() {
     setToDate(new Date());
   };
 
+  // --- CRITICAL FIX: Mapping correct API fields to State ---
   const handleOpenEditAccessModal = (document) => {
     setSelectedAccessRecord(document);
     setEditAccessModalOpen(true);
-    setEditSelectedRole(
-      document.accessDetails.docaccessrolerecid?.toString() || ""
-    );
-    setEditSelectedUser(
-      document.accessDetails.docaccessuserrecid?.toString() || ""
-    );
-    if (document.accessDetails.docaccessfromdate) {
-      setEditFromDate(new Date(document.accessDetails.docaccessfromdate));
-    }
-    if (document.accessDetails.docaccesstodate) {
-      setEditToDate(new Date(document.accessDetails.docaccesstodate));
-    }
-    if (document.accessDetails.docaccessexpirydate) {
-      setEditExpiryDate(new Date(document.accessDetails.docaccessexpirydate));
-    }
+
+    // 1. CORRECTED: Read 'usersrolesrecid' instead of 'docaccessrolerecid'
+    // From JSON: "usersrolesrecid": 1
+    const roleId = document.accessDetails?.usersrolesrecid?.toString() || "";
+    
+    // From JSON: "docaccessuserrecid": "39"
+    const userId = document.accessDetails?.docaccessuserrecid?.toString() || "";
+    
+    setEditSelectedRole(roleId);
+    setEditSelectedUser(userId);
+
+    // 2. Parse Dates
+    const fromDateStr = document.accessDetails?.docaccessfromdate;
+    const toDateStr = document.accessDetails?.docaccesstodate;
+
+    setEditFromDate(fromDateStr ? new Date(fromDateStr) : new Date());
+    setEditToDate(toDateStr ? new Date(toDateStr) : new Date());
+
+    // 3. Fetch Roles & Users
+    // We pass the roleId to ensure if it's not in the standard filter, we add it back.
     if (editRoles.length === 0) {
-      fetchEditRoles();
+      fetchEditRoles(roleId); 
+    } else {
+      const exists = editRoles.find(r => r.rolesrecid.toString() === roleId);
+      if(!exists) fetchEditRoles(roleId);
     }
-    if (document.accessDetails.docaccessrolerecid) {
-      fetchEditUsers(document.accessDetails.docaccessrolerecid);
+    
+    // We pass userId to ensure "arun admin" (ID 39) appears even if role filtering hides him.
+    if (roleId) {
+      fetchEditUsers(roleId, userId);
     }
   };
 
@@ -613,7 +644,6 @@ export default function CollectedDocumentsTable() {
     setEditSelectedUser("");
     setEditFromDate(new Date());
     setEditToDate(new Date());
-    setEditExpiryDate(new Date());
   };
 
   const handleMenuOpen = (event, row) => {
@@ -641,9 +671,9 @@ export default function CollectedDocumentsTable() {
         ${
           row.accessDetails
             ? `
-          <p><strong>Access User:</strong> ${row.accessDetails.usersname}</p>
-          <p><strong>Access Expiry:</strong> ${
-            row.accessDetails.docaccessexpirydate || "-"
+          <p><strong>Access User:</strong> ${row.accessDetails.docaccessusername}</p>
+          <p><strong>Access To Date:</strong> ${
+            row.accessDetails.docaccesstodate || "-"
           }</p>
         `
             : ""
@@ -662,7 +692,7 @@ export default function CollectedDocumentsTable() {
     });
   };
 
-  // --- USE EFFECT (UNCHANGED) ---
+  // --- USE EFFECT ---
   useEffect(() => {
     fetchDocuments();
   }, []);
@@ -675,7 +705,6 @@ export default function CollectedDocumentsTable() {
       width: 80,
       sortable: true,
       renderCell: (params) => {
-        // Ensure we have valid params and row
         if (!params || !params.api || !params.row) return "1";
 
         const rowIndex = params.api.getRowIndexRelativeToVisibleRows(
@@ -684,7 +713,6 @@ export default function CollectedDocumentsTable() {
         const pageSize = params.api.state.pagination.pageSize;
         const currentPage = params.api.state.pagination.page;
 
-        // Ensure we have valid numbers
         const validRowIndex = isNaN(rowIndex) ? 0 : rowIndex;
         const validPageSize = isNaN(pageSize) ? 10 : pageSize;
         const validCurrentPage = isNaN(currentPage) ? 0 : currentPage;
@@ -784,7 +812,6 @@ export default function CollectedDocumentsTable() {
       width: 80,
       sortable: true,
       renderCell: (params) => {
-        // Ensure we have valid params and row
         if (!params || !params.api || !params.row) return "1";
 
         const rowIndex = params.api.getRowIndexRelativeToVisibleRows(
@@ -793,7 +820,6 @@ export default function CollectedDocumentsTable() {
         const pageSize = params.api.state.pagination.pageSize;
         const currentPage = params.api.state.pagination.page;
 
-        // Ensure we have valid numbers
         const validRowIndex = isNaN(rowIndex) ? 0 : rowIndex;
         const validPageSize = isNaN(pageSize) ? 10 : pageSize;
         const validCurrentPage = isNaN(currentPage) ? 0 : currentPage;
@@ -845,7 +871,7 @@ export default function CollectedDocumentsTable() {
     },
     {
       field: "accessDetails.docaccessexpirydate",
-      headerName: "Access Expiry",
+      headerName: "Access To Date",
       width: 120,
       sortable: true,
       renderCell: (params) =>
@@ -896,7 +922,7 @@ export default function CollectedDocumentsTable() {
           <Tooltip title="Delete">
             <IconButton
               color="error"
-              onClick={() => handleDelete(params.row)} // Pass the row directly
+              onClick={() => handleDelete(params.row)}
               disabled={isDeleting === params.row.accessDetails?.docaccessrecid}
             >
               {isDeleting === params.row.accessDetails?.docaccessrecid ? (
@@ -927,8 +953,8 @@ export default function CollectedDocumentsTable() {
     return data.map((item) => ({
       "Document Name": item.documentname || "",
       Category: item.doccatname || "",
-      "Access User": item.accessDetails?.usersname || "",
-      "Access Expiry": item.accessDetails?.docaccessexpirydate || "",
+      "Access User": item.accessDetails?.docaccessusername || "",
+      "Access To Date": item.accessDetails?.docaccesstodate || "",
       "Upload Date": item.collecteddocuploaddate?.replace("T", " ") || "",
     }));
   };
@@ -957,7 +983,6 @@ export default function CollectedDocumentsTable() {
 
   return (
     <Box sx={{ width: "100%", p: 2 }}>
-      {/* Add CSS for SweetAlert2 z-index */}
       <style jsx global>{`
         .swal2-popup-high-zindex {
           z-index: 99999 !important;
@@ -1096,7 +1121,7 @@ export default function CollectedDocumentsTable() {
           searchFields={[
             "documentname",
             "doccatname",
-            "accessDetails.usersname",
+            "accessDetails.docaccessusername",
           ]}
           uniqueIdField="collecteddocrecid"
           onExportData={onExportDocumentsWithAccessData}
@@ -1173,7 +1198,7 @@ export default function CollectedDocumentsTable() {
                 disabled={rolesLoading}
               >
                 {roles.map((role) => (
-                  <MenuItem key={role.rolesrecid} value={role.rolesrecid}>
+                  <MenuItem key={role.rolesrecid} value={role.rolesrecid.toString()}>
                     {role.rolesname}
                   </MenuItem>
                 ))}
@@ -1191,7 +1216,7 @@ export default function CollectedDocumentsTable() {
                 disabled={!selectedRole || usersLoading}
               >
                 {users.map((user) => (
-                  <MenuItem key={user.usersrecid} value={user.usersrecid}>
+                  <MenuItem key={user.usersrecid} value={user.usersrecid.toString()}>
                     {user.usersname}
                   </MenuItem>
                 ))}
@@ -1271,7 +1296,7 @@ export default function CollectedDocumentsTable() {
                 disabled={editRolesLoading}
               >
                 {editRoles.map((role) => (
-                  <MenuItem key={role.rolesrecid} value={role.rolesrecid}>
+                  <MenuItem key={role.rolesrecid} value={role.rolesrecid.toString()}>
                     {role.rolesname}
                   </MenuItem>
                 ))}
@@ -1289,7 +1314,7 @@ export default function CollectedDocumentsTable() {
                 disabled={!editSelectedRole || editUsersLoading}
               >
                 {editUsers.map((user) => (
-                  <MenuItem key={user.usersrecid} value={user.usersrecid}>
+                  <MenuItem key={user.usersrecid} value={user.usersrecid.toString()}>
                     {user.usersname}
                   </MenuItem>
                 ))}
@@ -1305,7 +1330,7 @@ export default function CollectedDocumentsTable() {
               />
 
               <DatePicker
-                label="To Date"
+                label="To Date (Expiry)"
                 value={editToDate}
                 onChange={(newValue) => setEditToDate(newValue)}
                 renderInput={(params) => <TextField {...params} fullWidth />}

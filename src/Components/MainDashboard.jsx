@@ -40,7 +40,7 @@ function MainDashboard() {
           <MetricCardDashboard stats={stats} />
         )}
 
-        {roleid === "7" ? (
+        {roleid === "7" || roleid === "12" ? (
           ""
         ) : (
           <div

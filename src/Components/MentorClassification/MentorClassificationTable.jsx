@@ -29,8 +29,13 @@ import {
   Alert,
   Grid,
   styled,
+  Tooltip,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import ToggleOnIcon from "@mui/icons-material/ToggleOn"; // ON Icon
+import ToggleOffIcon from "@mui/icons-material/ToggleOff"; // OFF Icon
+import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // Status Active
+import CancelIcon from "@mui/icons-material/Cancel"; // Status Inactive
 
 // Import your reusable component
 import ReusableDataGrid from "../Datafetching/ReusableDataGrid";
@@ -44,15 +49,36 @@ const StyledBackdrop = styled(Backdrop)(({ theme }) => ({
 const ActionButton = styled(IconButton)(({ theme, color }) => ({
   margin: theme.spacing(0.5),
   backgroundColor:
-    color === "edit" ? theme.palette.primary.main : theme.palette.error.main,
+    color === "edit"
+      ? theme.palette.primary.main
+      : color === "on" // ON State -> Green
+      ? theme.palette.success.main
+      : color === "off" // OFF State -> Grey
+      ? theme.palette.grey[500]
+      : color === "delete" // Delete -> Red
+      ? theme.palette.error.main
+      : theme.palette.error.main,
   color: "white",
   "&:hover": {
     backgroundColor:
-      color === "edit" ? theme.palette.primary.dark : theme.palette.error.dark,
+      color === "edit"
+        ? theme.palette.primary.dark
+        : color === "on"
+        ? theme.palette.success.dark
+        : color === "off"
+        ? theme.palette.grey[700]
+        : color === "delete"
+        ? theme.palette.error.dark
+        : theme.palette.error.dark,
+  },
+  "&.disabled": {
+    backgroundColor: theme.palette.grey[300],
+    color: theme.palette.grey[500],
+    cursor: "not-allowed",
   },
 }));
 
-// Common date formatting function (Taken from reference code)
+// Common date formatting function
 const formatDate = (dateStr) => {
   if (!dateStr) return "-";
   try {
@@ -112,6 +138,8 @@ export default function MentorClassificationTable() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState({});
+  const [isToggling, setIsToggling] = useState({}); // State for Toggle Status
+
   const [toast, setToast] = useState({
     open: false,
     message: "",
@@ -150,6 +178,79 @@ export default function MentorClassificationTable() {
       setLoading(false);
     }
   }, [userId, incUserid]);
+
+  // --- Handle Toggle Status (Enable/Disable) ---
+  const handleToggleStatus = useCallback(
+    (item) => {
+      const isCurrentlyEnabled = item.mentorclassetadminstate === 1;
+      const actionText = isCurrentlyEnabled ? "disable" : "enable";
+      const newState = isCurrentlyEnabled ? 0 : 1;
+
+      Swal.fire({
+        title: "Are you sure?",
+        text: `Do you want to ${actionText} this classification?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: isCurrentlyEnabled ? "#d33" : "#3085d6",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: `Yes, ${actionText} it!`,
+        cancelButtonText: "Cancel",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          setIsToggling((prev) => ({
+            ...prev,
+            [item.mentorclassetrecid]: true,
+          }));
+
+          // Payload structure sending full object to prevent nulling other fields
+          const bodyPayload = {
+            mentorclassetrecid: item.mentorclassetrecid,
+            mentorclassetname: item.mentorclassetname,
+            mentorclassetdesc: item.mentorclassetdesc,
+            mentorclassetadminstate: newState,
+            mentorclassetmodifiedby: userId || "1",
+          };
+
+          api
+            .post("/updateMentorClassification", bodyPayload, {
+              headers: {
+                "X-Module": "Mentor Management",
+                "X-Action": "Update Classification Status",
+              },
+            })
+            .then((response) => {
+              if (response.data.statusCode === 200) {
+                Swal.fire(
+                  "Success!",
+                  `Classification ${actionText}d successfully!`,
+                  "success"
+                );
+                fetchClassifications();
+              } else {
+                throw new Error(
+                  response.data.message || `Failed to ${actionText} classification`
+                );
+              }
+            })
+            .catch((err) => {
+              console.error(`Error ${actionText}ing classification:`, err);
+              Swal.fire(
+                "Error",
+                `Failed to ${actionText}: ${err.message}`,
+                "error"
+              );
+            })
+            .finally(() => {
+              setIsToggling((prev) => ({
+                ...prev,
+                [item.mentorclassetrecid]: false,
+              }));
+            });
+        }
+      });
+    },
+    [userId, fetchClassifications]
+  );
 
   const createClassification = useCallback(async () => {
     try {
@@ -284,6 +385,16 @@ export default function MentorClassificationTable() {
         Swal.fire("Access Denied", "You do not have permission to edit classifications.", "warning");
         return;
       }
+      // Prevent editing if disabled
+      if (item.mentorclassetadminstate === 0) {
+        Swal.fire(
+          "Restricted",
+          "Cannot edit a disabled classification. Please enable it first.",
+          "warning"
+        );
+        return;
+      }
+
       setDialogType("edit");
       setEditingId(item.mentorclassetrecid);
       setFormData({
@@ -400,10 +511,40 @@ export default function MentorClassificationTable() {
         sortable: true,
       },
       {
+        field: "mentorclassetadminstate",
+        headerName: "Status",
+        width: 120,
+        sortable: true,
+        renderCell: (params) => {
+          if (!params?.row) return "-";
+          const status = params.row.mentorclassetadminstate;
+          const isActive = status === 1 || status === undefined;
+
+          return (
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <IconButton
+                size="small"
+                sx={{
+                  mr: 0.5,
+                  color: isActive ? "success.main" : "error.main",
+                  cursor: "default",
+                }}
+              >
+                {isActive ? <CheckCircleIcon fontSize="small" /> : <CancelIcon fontSize="small" />}
+              </IconButton>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                {isActive ? "Active" : "Inactive"}
+              </Typography>
+            </Box>
+          );
+        },
+      },
+      {
         field: "createdname",
         headerName: "Created By",
         width: 150,
         sortable: true,
+        renderCell: (params) => params?.row?.createdname || params?.row?.mentorclassetcreatedby || "-",
       },
       {
         field: "mentorclassetcreationtime",
@@ -418,6 +559,7 @@ export default function MentorClassificationTable() {
         headerName: "Modified By",
         width: 150,
         sortable: true,
+        renderCell: (params) => params?.row?.modifiedname || params?.row?.mentorclassetmodifiedby || "-",
       },
       {
         field: "mentorclassetmodifiedtime",
@@ -432,37 +574,53 @@ export default function MentorClassificationTable() {
             {
               field: "actions",
               headerName: "Actions",
-              width: 150,
+              width: 180, // Increased width for 3 buttons
               sortable: false,
               filterable: false,
               renderCell: (params) => {
                 if (!params?.row) return null;
+                
+                const isDisabled = params.row.mentorclassetadminstate === 0;
+                const isCurrentlyEnabled = params.row.mentorclassetadminstate === 1;
+
                 return (
                   <Box>
+                    {/* Toggle Status Button */}
+                    <ActionButton
+                      color={isCurrentlyEnabled ? "on" : "off"}
+                      onClick={() => handleToggleStatus(params.row)}
+                      disabled={
+                        isSaving ||
+                        isDeleting[params.row.mentorclassetrecid] ||
+                        isToggling[params.row.mentorclassetrecid]
+                      }
+                      title={isCurrentlyEnabled ? "Disable" : "Enable"}
+                    >
+                      {isToggling[params.row.mentorclassetrecid] ? (
+                        <CircularProgress size={16} color="inherit" />
+                      ) : isCurrentlyEnabled ? (
+                        <ToggleOnIcon fontSize="small" />
+                      ) : (
+                        <ToggleOffIcon fontSize="small" />
+                      )}
+                    </ActionButton>
+
+                    {/* Edit Button */}
                     <ActionButton
                       color="edit"
                       onClick={() => openEditModal(params.row)}
                       disabled={
-                        isSaving || isDeleting[params.row.mentorclassetrecid]
+                        isSaving ||
+                        isDeleting[params.row.mentorclassetrecid] ||
+                        isDisabled || // Disabled if state is 0
+                        isToggling[params.row.mentorclassetrecid]
                       }
                       title="Edit"
+                      className={isDisabled ? "disabled" : ""}
                     >
                       <FaEdit />
                     </ActionButton>
-                    <ActionButton
-                      color="delete"
-                      onClick={() => handleDelete(params.row)}
-                      disabled={
-                        isSaving || isDeleting[params.row.mentorclassetrecid]
-                      }
-                      title="Delete"
-                    >
-                      {isDeleting[params.row.mentorclassetrecid] ? (
-                        <CircularProgress size={16} color="inherit" />
-                      ) : (
-                        <FaTrash />
-                      )}
-                    </ActionButton>
+
                   </Box>
                 );
               },
@@ -470,7 +628,7 @@ export default function MentorClassificationTable() {
           ]
         : []),
     ],
-    [hasWriteAccess, isSaving, isDeleting, openEditModal, handleDelete]
+    [hasWriteAccess, isSaving, isDeleting, isToggling, openEditModal, handleDelete, handleToggleStatus]
   );
 
   const exportConfig = useMemo(
@@ -634,7 +792,7 @@ export default function MentorClassificationTable() {
       </Snackbar>
 
       {/* Loading Overlay */}
-      <StyledBackdrop open={isSaving}>
+      <StyledBackdrop open={isSaving || Object.values(isToggling).some(Boolean)}>
         <Box
           sx={{
             display: "flex",
@@ -644,7 +802,11 @@ export default function MentorClassificationTable() {
         >
           <CircularProgress color="inherit" />
           <Typography sx={{ mt: 2 }}>
-            {dialogType === "add" ? "Adding classification..." : "Updating classification..."}
+             {Object.values(isToggling).some(Boolean)
+              ? "Updating status..."
+              : dialogType === "add"
+              ? "Adding classification..."
+              : "Updating classification..."}
           </Typography>
         </Box>
       </StyledBackdrop>

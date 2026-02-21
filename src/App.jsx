@@ -25,6 +25,7 @@ import ApplicationManagement from "./Components/ApplicationManagement/Applicatio
 import MainDashboard from "./Components/MainDashboard";
 import DocumentAccessManagement from "./Components/DocumentAccessManagement/DocumentAccessManagement";
 import TrainingManagementPage from "./Components/TrainingManagement/TrainingManagementPage";
+import IncubeeAssignment from "./Components/MentorIncubateeList/IncubateeAssignment";
 
 import ResetPassword from "./Components/Login/ResetPassword";
 import IncubateeTable from "./Components/IncubateeManagement/IncubateeTable";
@@ -174,6 +175,14 @@ function AppContent() {
               }
             />
             <Route
+              path="/Incubation/Dashboard/MentorIncubateeList"
+              element={
+                <ProtectedRoute>
+                  <IncubeeAssignment />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/Incubation/Dashboard/TrainingAssignment"
               element={
                 <ProtectedRoute>
@@ -210,7 +219,7 @@ function AppContent() {
             <Route
               path="/startup/Dashboard/Courses"
               element={
-                <ProtectedRoute allowedRoles={[4]}>
+                <ProtectedRoute>
                   <CoursesPage />
                 </ProtectedRoute>
               }

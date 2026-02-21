@@ -77,7 +77,9 @@ export default function AppDetailsTable() {
             .toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
           app.guiappspath.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          app.grpappsgroupname.toLowerCase().includes(searchQuery.toLowerCase())
+          app.grpappsgroupname
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()),
       );
       setFilteredApps(filtered);
     }
@@ -110,7 +112,7 @@ export default function AppDetailsTable() {
             "X-Module": "Application Management",
             "X-Action": "Fetching Application Details List",
           },
-        }
+        },
       );
 
       if (response.data.statusCode === 200) {
@@ -118,7 +120,7 @@ export default function AppDetailsTable() {
         setFilteredApps(response.data.data || []);
       } else {
         throw new Error(
-          response.data.message || "Failed to fetch application details"
+          response.data.message || "Failed to fetch application details",
         );
       }
     } catch (err) {
@@ -160,7 +162,7 @@ export default function AppDetailsTable() {
               ? `"${value}"`
               : value;
           })
-          .join(",")
+          .join(","),
       ),
     ].join("\n");
 
@@ -171,7 +173,7 @@ export default function AppDetailsTable() {
     link.setAttribute("href", url);
     link.setAttribute(
       "download",
-      `applications_${new Date().toISOString().slice(0, 10)}.csv`
+      `applications_${new Date().toISOString().slice(0, 10)}.csv`,
     );
     link.style.visibility = "hidden";
     document.body.appendChild(link);
@@ -210,7 +212,7 @@ export default function AppDetailsTable() {
       // Generate the Excel file and download
       XLSX.writeFile(
         wb,
-        `applications_${new Date().toISOString().slice(0, 10)}.xlsx`
+        `applications_${new Date().toISOString().slice(0, 10)}.xlsx`,
       );
     } catch (error) {
       console.error("Error exporting to Excel:", error);
@@ -417,7 +419,7 @@ export default function AppDetailsTable() {
         Showing {paginationModel.page * paginationModel.pageSize + 1} to{" "}
         {Math.min(
           (paginationModel.page + 1) * paginationModel.pageSize,
-          filteredApps.length
+          filteredApps.length,
         )}{" "}
         of {filteredApps.length} entries
       </Box>

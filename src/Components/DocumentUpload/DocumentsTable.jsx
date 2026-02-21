@@ -59,11 +59,12 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import ArticleIcon from "@mui/icons-material/Article";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import HowToRegIcon from "@mui/icons-material/HowToReg";
 import UndoIcon from "@mui/icons-material/Undo";
 import ToggleOnIcon from "@mui/icons-material/ToggleOn"; // ON Icon (Green Pill)
 import ToggleOffIcon from "@mui/icons-material/ToggleOff"; // OFF Icon (Grey Pill)
+import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // Status Active
+import CancelIcon from "@mui/icons-material/Cancel"; // Status Inactive
 
 // Import your reusable component and API instance
 import ReusableDataGrid from "../Datafetching/ReusableDataGrid";
@@ -1956,18 +1957,26 @@ const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {
         width: 120,
         sortable: true,
         renderCell: (params) => {
-          if (!params || !params.row) return "-";
-          const isEnabled = params.row.documentadminstate === 1;
+          if (!params?.row) return "-";
+          const status = params.row.documentadminstate;
+          const isActive = status === 1 || status === undefined;
+
           return (
-            <Chip
-              label={isEnabled ? "Enabled" : "Disabled"}
-              size="small"
-              color={isEnabled ? "success" : "default"}
-              sx={{
-                color: isEnabled ? "white" : "text.secondary",
-                fontWeight: "bold",
-              }}
-            />
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <IconButton
+          size="small"
+          sx={{
+            mr: 0.5,
+            color: isActive ? "success.main" : "error.main",
+            cursor: "default",
+          }}
+              >
+          {isActive ? <CheckCircleIcon fontSize="small" /> : <CancelIcon fontSize="small" />}
+              </IconButton>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+          {isActive ? "Active" : "Inactive"}
+              </Typography>
+            </Box>
           );
         },
       },

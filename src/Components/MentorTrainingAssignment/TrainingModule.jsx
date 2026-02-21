@@ -85,7 +85,7 @@ const FileUploadButton = styled(Button)(({ theme }) => ({
 const TrainingModule = forwardRef(
   ({ title = "🎓 Training Module", onAssignSuccess }, ref) => {
     const hasWriteAccess = useWriteAccess(
-      "/Incubation/Dashboard/TrainingManagementPage",
+      "/Incubation/Dashboard/TrainingAssignment",
     );
     const userId = sessionStorage.getItem("userid");
     const token = sessionStorage.getItem("token");
@@ -232,28 +232,26 @@ const TrainingModule = forwardRef(
 
     const fetchUsers = useCallback(async () => {
       try {
+        // UPDATED: Using getmentorspoc endpoint
         const response = await api.post(
-          "/resources/generic/getusers",
+          "/resources/generic/getmentorspoc",
           {
-            userId: parseInt(userId) || 1,
-            userIncId: "ALL",
+            userId: userId || "90", // Use dynamic userId or fallback to 90 as requested
+            userIncId: "1",
           },
           {
             headers: {
               "X-Module": "Training Management",
-              "X-Action": "Fetch Users",
+              "X-Action": "Fetch Mentors POC",
             },
           },
         );
 
-        const allUsers = response.data.data || [];
-        const incubateeUsers = allUsers.filter((user) =>
-          [4, 5, 6].includes(user.usersrolesrecid),
-        );
-
-        setUsers(incubateeUsers);
+        // Response structure: { data: [ { mentorincassnincuserrecid: ..., usersname: ... } ] }
+        const mentors = response.data.data || [];
+        setUsers(mentors);
       } catch (err) {
-        console.error("Error fetching users:", err);
+        console.error("Error fetching mentors:", err);
         setUsers([]);
       }
     }, [userId]);
@@ -376,7 +374,7 @@ const TrainingModule = forwardRef(
         e.preventDefault();
 
         if (!assignFormData.trainingassnincusersid) {
-          showToast("Please select an Incubatee", "error");
+          showToast("Please select a Mentor/POC", "error");
           return;
         }
 
@@ -386,6 +384,7 @@ const TrainingModule = forwardRef(
 
           const params = new URLSearchParams({
             trainingassntrainingid: selectedTrainingForAssign.trainingid,
+            // Sends mentorincassnincuserrecid as trainingassnincusersid
             trainingassnincusersid: assignFormData.trainingassnincusersid,
             trainingassnmentorusersid: parseInt(userId) || 1,
             trainingassnadminstate: 1,
@@ -764,7 +763,8 @@ const TrainingModule = forwardRef(
         },
       ];
 
-      if (hasWriteAccess && Number(roleid) === 1) {
+      console.log("write access:", hasWriteAccess, "roleid:", roleid);
+      if (hasWriteAccess && Number(roleid) === 12) {
         baseColumns.push({
           field: "actions",
           headerName: "Assign",
@@ -775,7 +775,7 @@ const TrainingModule = forwardRef(
             if (!params?.row) return null;
             return (
               <Box>
-                <Tooltip title="Assign to Incubatee" arrow>
+                <Tooltip title="Assign to Mentor/POC" arrow>
                   <IconButton
                     color="primary"
                     onClick={() => openAssignModal(params.row)}
@@ -1117,8 +1117,11 @@ const TrainingModule = forwardRef(
                     >
                       <MenuItem value="">Select Incubatee</MenuItem>
                       {users.map((user) => (
-                        <MenuItem key={user.usersrecid} value={user.usersrecid}>
-                          {user.usersname} ({user.incubateesname})
+                        <MenuItem
+                          key={user.mentorincassnincuserrecid}
+                          value={user.mentorincassnincuserrecid}
+                        >
+                          {user.usersname}
                         </MenuItem>
                       ))}
                     </Select>

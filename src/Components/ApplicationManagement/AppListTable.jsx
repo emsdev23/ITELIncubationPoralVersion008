@@ -76,7 +76,7 @@ export default function AppListTable() {
           app.guiappsappname
             .toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
-          app.guiappspath.toLowerCase().includes(searchQuery.toLowerCase())
+          app.guiappspath.toLowerCase().includes(searchQuery.toLowerCase()),
       );
       setFilteredApps(filtered);
     }
@@ -108,7 +108,7 @@ export default function AppListTable() {
             "X-Module": "Application Management",
             "X-Action": "Fetching Application List",
           },
-        }
+        },
       );
 
       if (response.data.statusCode === 200) {
@@ -116,7 +116,7 @@ export default function AppListTable() {
         setFilteredApps(response.data.data || []);
       } else {
         throw new Error(
-          response.data.message || "Failed to fetch application details"
+          response.data.message || "Failed to fetch application details",
         );
       }
     } catch (err) {
@@ -155,7 +155,7 @@ export default function AppListTable() {
               ? `"${value}"`
               : value;
           })
-          .join(",")
+          .join(","),
       ),
     ].join("\n");
 
@@ -166,7 +166,7 @@ export default function AppListTable() {
     link.setAttribute("href", url);
     link.setAttribute(
       "download",
-      `applications_${new Date().toISOString().slice(0, 10)}.csv`
+      `applications_${new Date().toISOString().slice(0, 10)}.csv`,
     );
     link.style.visibility = "hidden";
     document.body.appendChild(link);
@@ -202,7 +202,7 @@ export default function AppListTable() {
       // Generate the Excel file and download
       XLSX.writeFile(
         wb,
-        `applications_${new Date().toISOString().slice(0, 10)}.xlsx`
+        `applications_${new Date().toISOString().slice(0, 10)}.xlsx`,
       );
     } catch (error) {
       console.error("Error exporting to Excel:", error);
@@ -394,7 +394,7 @@ export default function AppListTable() {
         Showing {paginationModel.page * paginationModel.pageSize + 1} to{" "}
         {Math.min(
           (paginationModel.page + 1) * paginationModel.pageSize,
-          filteredApps.length
+          filteredApps.length,
         )}{" "}
         of {filteredApps.length} entries
       </Box>

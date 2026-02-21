@@ -1,0 +1,435 @@
+/* ===============================
+   User Association Table Styles
+=============================== */
+
+/* Main Container */
+.user-association-container {
+  padding: 2rem;
+  background: #f3f4f6; /* gray-100 */
+  /* min-height: 100vh; */
+  font-family: "Inter", sans-serif;
+  margin-bottom: 30px;
+}
+
+/* Header */
+.user-association-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.user-association-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827; /* gray-900 */
+  display: flex;
+  align-items: center;
+}
+
+/* Add New Association Button */
+.btn-add-new {
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 6px;
+  border: none;
+  background-color: #3b82f6; /* blue-500 */
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+}
+
+.btn-add-new:hover {
+  background-color: #2563eb; /* blue-600 */
+}
+
+/* Error Message */
+.error-message {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background-color: #fee2e2; /* red-100 */
+  color: #b91c1c; /* red-700 */
+  border-radius: 6px;
+  border-left: 4px solid #ef4444; /* red-500 */
+}
+
+/* Loading State */
+.user-association-empty {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280; /* gray-500 */
+  font-style: italic;
+}
+
+/* Table Container */
+.table-container {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+/* Table Styles */
+.association-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.association-table th {
+  background-color: #f9fafb; /* gray-50 */
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151; /* gray-700 */
+  border-bottom: 1px solid #e5e7eb; /* gray-200 */
+}
+
+.association-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb; /* gray-200 */
+  vertical-align: middle;
+}
+
+/* Association Row */
+.association-row {
+  background-color: white;
+}
+
+.association-row:hover {
+  background-color: #f9fafb; /* gray-50 */
+}
+
+/* User Name Cell */
+.user-name-cell {
+  font-weight: 600;
+  color: #111827; /* gray-900 */
+  vertical-align: top;
+  width: 200px;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.user-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Created By Cell */
+.created-by-cell {
+  color: #6b7280; /* gray-500 */
+  vertical-align: top;
+  width: 150px;
+}
+
+/* Company Cell */
+.company-cell {
+  width: 250px;
+}
+
+.company-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.company-name {
+  font-weight: 500;
+  color: #374151; /* gray-700 */
+}
+
+.association-date {
+  font-size: 0.75rem;
+  color: #9ca3af; /* gray-400 */
+}
+
+/* Associated By Cell */
+.associated-by-cell {
+  color: #6b7280; /* gray-500 */
+  width: 150px;
+}
+
+/* Delete Cell */
+.delete-cell {
+  width: 80px;
+  text-align: center;
+}
+
+/* No Association Cell */
+.no-association-cell {
+  text-align: center;
+  color: #9ca3af; /* gray-400 */
+  font-style: italic;
+}
+
+.no-association {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: #f9fafb; /* gray-50 */
+  border-radius: 4px;
+}
+
+/* Buttons */
+.btn-edit,
+.btn-delete,
+.btn-close,
+.btn-cancel,
+.btn-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-edit {
+  background-color: #f3f4f6; /* gray-100 */
+  color: #6b7280; /* gray-500 */
+  width: 32px;
+  height: 32px;
+}
+
+.btn-edit:hover {
+  background-color: #e5e7eb; /* gray-200 */
+  color: #374151; /* gray-700 */
+}
+
+.btn-delete {
+  background-color: #fee2e2; /* red-100 */
+  color: #b91c1c; /* red-700 */
+  width: 32px;
+  height: 32px;
+}
+
+.btn-delete:hover {
+  background-color: #fecaca; /* red-200 */
+}
+
+.btn-close {
+  background-color: transparent;
+  color: #6b7280; /* gray-500 */
+}
+
+.btn-close:hover {
+  background-color: #f3f4f6; /* gray-100 */
+  color: #374151; /* gray-700 */
+}
+
+.btn-cancel {
+  padding: 0.5rem 1rem;
+  background-color: #f3f4f6; /* gray-100 */
+  color: #374151; /* gray-700 */
+}
+
+.btn-cancel:hover {
+  background-color: #e5e7eb; /* gray-200 */
+}
+
+.btn-save {
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6; /* blue-500 */
+  color: white;
+}
+
+.btn-save:hover {
+  background-color: #2563eb; /* blue-600 */
+}
+
+.btn-save:disabled {
+  background-color: #9ca3af; /* gray-400 */
+  cursor: not-allowed;
+}
+
+/* Spinner */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Modal Styles */
+.user-association-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.user-association-modal-content {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.user-association-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb; /* gray-200 */
+}
+
+.user-association-modal-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827; /* gray-900 */
+}
+
+.user-association-modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.user-association-modal-body h4 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #374151; /* gray-700 */
+  margin-bottom: 1rem;
+}
+
+.user-association-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb; /* gray-200 */
+}
+
+/* Form Elements */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151; /* gray-700 */
+  margin-bottom: 0.5rem;
+}
+
+.user-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db; /* gray-300 */
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #111827; /* gray-900 */
+}
+
+.user-select:focus {
+  outline: none;
+  border-color: #3b82f6; /* blue-500 */
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); /* blue-500 with opacity */
+}
+
+/* Incubatees Checklist */
+.incubatees-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.incubatee-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.incubatee-checkbox-item input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  color: #3b82f6; /* blue-500 */
+  border-radius: 4px;
+}
+
+.incubatee-checkbox-item label {
+  font-size: 0.875rem;
+  color: #374151; /* gray-700 */
+  cursor: pointer;
+}
+
+/* Modal Loading Overlay */
+.modal-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.modal-loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.modal-loading-spinner p {
+  font-size: 0.875rem;
+  color: #6b7280; /* gray-500 */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .user-association-container {
+    padding: 1rem;
+  }
+
+  .user-association-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
+
+  .association-table {
+    min-width: 700px;
+  }
+
+  .user-association-modal-content {
+    width: 95%;
+    max-height: 90vh;
+  }
+}

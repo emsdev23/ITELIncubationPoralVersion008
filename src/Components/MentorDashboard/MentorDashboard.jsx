@@ -611,9 +611,9 @@ const MentorDashboard = () => {
                         <h2 className="profile-name">
                           {selectedMentor.mentordetsname}
                         </h2>
-                        <p className="profile-designation">
+                        {/* <p className="profile-designation">
                           {selectedMentor.mentordetsdesign}
-                        </p>
+                        </p> */}
                         {/* Only show badges if at least one exists */}
                         {(selectedMentor.mentorclasssetname ||
                           selectedMentor.mentortypename ||
@@ -638,13 +638,13 @@ const MentorDashboard = () => {
                         )}
                       </div>
 
-                      <button
+                      {/* <button
                         className="edit-profile-btn"
                         onClick={handleEditMentor}
                       >
                         <CircleFadingPlus className="w-4 h-4" />
                         Edit Profile
-                      </button>
+                      </button> */}
                     </div>
                   </div>
                 </div>

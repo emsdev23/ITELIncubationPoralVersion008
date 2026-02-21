@@ -45,6 +45,7 @@ import * as XLSX from "xlsx";
 import { DataContext } from "../Datafetching/DataProvider";
 import ChangePasswordModal from "./ChangePasswordModal";
 import ContactModal from "./ContactModal";
+import MentorModel from "./MentorModel";
 import DocumentsTable from "../DocumentUpload/DocumentsTable";
 import { IPAdress } from "../Datafetching/IPAdrees";
 import api from "../Datafetching/api";
@@ -242,6 +243,7 @@ const StartupDashboard = () => {
   // Other states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isMentorModalOpen, setIsMentorModalOpen] = useState(false);
   const [localCompanyDoc, setLocalCompanyDoc] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
@@ -974,6 +976,24 @@ const StartupDashboard = () => {
       return;
     }
 
+    // ✅ Confirmation dialog before uploading
+    const confirmation = await Swal.fire({
+      icon: "question",
+      title: "Change Company Logo?",
+      text: "Are you sure you want to update the company logo?",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Change it",
+      cancelButtonText: "No, Cancel",
+      confirmButtonColor: "#4f46e5",
+      cancelButtonColor: "#6b7280",
+    });
+
+    // ✅ Stop if user clicked "No"
+    if (!confirmation.isConfirmed) {
+      event.target.value = ""; // reset file input
+      return;
+    }
+
     try {
       setUploadingLogo(true);
 
@@ -1703,6 +1723,13 @@ const StartupDashboard = () => {
                 userId={Number(userid)}
                 incuserid={incuserid}
               />
+
+              <MentorModel
+                isOpen={isMentorModalOpen}
+                onClose={() => setIsMentorModalOpen(false)}
+                userId={Number(userid)}
+                incuserid={incuserid}
+              />
             </div>
           </div>
         </header>
@@ -1808,6 +1835,15 @@ const StartupDashboard = () => {
               >
                 <Mail className="h-4 w-4" />
                 Contact
+              </div>
+
+              <div
+                className={styles.contactBadge}
+                onClick={() => setIsMentorModalOpen(true)}
+                style={{ marginTop: "4rem" }}
+              >
+                <Users className="h-4 w-4" />
+                Mentor
               </div>
             </div>
           </div>
