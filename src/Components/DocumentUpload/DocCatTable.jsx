@@ -9,6 +9,7 @@ import Swal from "sweetalert2";
 import { Download } from "lucide-react";
 import { FaTimes, FaPowerOff } from "react-icons/fa";
 import { DataContext } from "../Datafetching/DataProvider";
+import { useWriteAccess } from "../Datafetching/useWriteAccess";
 
 // Material UI imports
 import {
@@ -29,8 +30,8 @@ import { styled } from "@mui/material/styles";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CloseIcon from "@mui/icons-material/Close";
-import ToggleOnIcon from "@mui/icons-material/ToggleOn"; // ON Icon (Green Pill)
-import ToggleOffIcon from "@mui/icons-material/ToggleOff"; // OFF Icon (Grey Pill)
+import ToggleOnIcon from "@mui/icons-material/ToggleOn"; // ON Icon
+import ToggleOffIcon from "@mui/icons-material/ToggleOff"; // OFF Icon
 import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // Status Active
 import CancelIcon from "@mui/icons-material/Cancel"; // Status Inactive
 
@@ -44,25 +45,30 @@ const StyledBackdrop = styled(Backdrop)(({ theme }) => ({
   color: "#fff",
 }));
 
+// UPDATED: Styled ActionButton to support "on" (Green) and "off" (Grey) like TrainingModule
 const ActionButton = styled(IconButton)(({ theme, color }) => ({
   margin: theme.spacing(0.5),
   backgroundColor:
     color === "edit"
       ? theme.palette.primary.main
-      : color === "disable"
-      ? theme.palette.error.main
-      : color === "enable"
+      : color === "on" // Active/Enabled State -> Green
       ? theme.palette.success.main
-      : theme.palette.error.main,
+      : color === "off" // Inactive/Disabled State -> Grey
+      ? theme.palette.grey[500]
+      : color === "delete" // Delete -> Red
+      ? theme.palette.error.main
+      : theme.palette.error.main, // Fallback
   color: "white",
   "&:hover": {
     backgroundColor:
       color === "edit"
         ? theme.palette.primary.dark
-        : color === "disable"
-        ? theme.palette.error.dark
-        : color === "enable"
+        : color === "on"
         ? theme.palette.success.dark
+        : color === "off"
+        ? theme.palette.grey[700] // Grey Hover
+        : color === "delete"
+        ? theme.palette.error.dark
         : theme.palette.error.dark,
   },
   "&.disabled": {
@@ -114,7 +120,9 @@ export default function DocCatTable() {
     (item) => item.guiappspath === currentPath
   );
 
-  const hasWriteAccess = menuItem ? menuItem.appswriteaccess === 1 : false;
+  const hasWriteAccess = useWriteAccess(
+      "/Incubation/Dashboard/AddDocuments"
+    );
 
   // --- 1. STATE DECLARATIONS ---
   const userId = sessionStorage.getItem("userid");
@@ -422,17 +430,17 @@ export default function DocCatTable() {
           return (
             <Box sx={{ display: "flex", alignItems: "center" }}>
               <IconButton
-          size="small"
-          sx={{
-            mr: 0.5,
-            color: isActive ? "success.main" : "error.main",
-            cursor: "default",
-          }}
+                size="small"
+                sx={{
+                  mr: 0.5,
+                  color: isActive ? "success.main" : "error.main",
+                  cursor: "default",
+                }}
               >
-          {isActive ? <CheckCircleIcon fontSize="small" /> : <CancelIcon fontSize="small" />}
+                {isActive ? <CheckCircleIcon fontSize="small" /> : <CancelIcon fontSize="small" />}
               </IconButton>
               <Typography variant="body2" sx={{ fontWeight: 500 }}>
-          {isActive ? "Active" : "Inactive"}
+                {isActive ? "Active" : "Inactive"}
               </Typography>
             </Box>
           );
@@ -501,16 +509,18 @@ export default function DocCatTable() {
                   <Box>
                     {/* Toggle Status Button */}
                     <ActionButton
-                      color={isCurrentlyEnabled ? "enable" : "disable"}
+                      color={isCurrentlyEnabled ? "on" : "off"}
                       onClick={() => handleToggleStatus(params.row)}
                       disabled={
                         isSaving ||
-                        isDeleting[params.row.documentsrecid] ||
-                        isToggling === params.row.documentsrecid
+                        isDeleting[params.row.doccatrecid] || // Fixed typo here
+                        isToggling === params.row.doccatrecid
                       }
                       title={isCurrentlyEnabled ? "Disable" : "Enable"}
                     >
-                      {isToggling === params.row.documentsrecid ? (
+                      {isToggling === params.row.doccatrecid ? (
+                        <CircularProgress size={16} color="inherit" />
+                      ) : isCurrentlyEnabled ? (
                         <ToggleOnIcon fontSize="small" />
                       ) : (
                         <ToggleOffIcon fontSize="small" />

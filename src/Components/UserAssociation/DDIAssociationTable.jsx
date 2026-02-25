@@ -18,6 +18,7 @@ import Swal from "sweetalert2";
 import "./UserAssociationTable.css";
 import { IPAdress } from "../Datafetching/IPAdrees";
 import api from "../Datafetching/api";
+import { useWriteAccess } from "../Datafetching/useWriteAccess"; // Import Hook
 
 // Material-UI imports
 import {
@@ -57,6 +58,8 @@ import { CSVLink } from "react-csv";
 import * as XLSX from "xlsx";
 
 export default function DDIAssociationTable() {
+  const hasWriteAccess = useWriteAccess("/Incubation/Dashboard/Userassociation");
+
   const userId = sessionStorage.getItem("userid");
   const token = sessionStorage.getItem("token");
   const incUserid = sessionStorage.getItem("incuserid");
@@ -786,18 +789,20 @@ export default function DDIAssociationTable() {
                       </Tooltip>
                     </Box>
                   </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography>Actions</Typography>
-                      {hasActiveFilters && (
-                        <Tooltip title="Clear all filters">
-                          <IconButton size="small" onClick={clearAllFilters}>
-                            <FaTimes />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </Box>
-                  </TableCell>
+                  {hasWriteAccess && (
+                    <TableCell>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Typography>Actions</Typography>
+                        {hasActiveFilters && (
+                          <Tooltip title="Clear all filters">
+                            <IconButton size="small" onClick={clearAllFilters}>
+                              <FaTimes />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
+                    </TableCell>
+                    )}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -840,14 +845,16 @@ export default function DDIAssociationTable() {
                                   >
                                     {user.usersname}
                                   </Typography>
-                                  <Tooltip title="Edit associations">
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => startEditing(user)}
-                                    >
-                                      <FaEdit size={16} />
-                                    </IconButton>
-                                  </Tooltip>
+                                  {hasWriteAccess && (
+                                    <Tooltip title="Edit associations">
+                                      <IconButton
+                                        size="small"
+                                        onClick={() => startEditing(user)}
+                                      >
+                                        <FaEdit size={16} />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
                                 </Box>
                               </TableCell>
                               <TableCell
@@ -887,31 +894,33 @@ export default function DDIAssociationTable() {
                                 {user.associations[index]
                                   .usrincassncreatedbyname || "N/A"}
                               </TableCell>
-                              <TableCell>
-                                <Tooltip title="Remove association">
-                                  <IconButton
-                                    size="small"
-                                    onClick={() =>
-                                      handleDelete(
-                                        user.associations[index].usrincassnrecid
-                                      )
-                                    }
-                                    disabled={isDeleting}
-                                  >
-                                    {isDeleting ? (
-                                      <FaSpinner
-                                        className="spinner"
-                                        size={14}
-                                      />
-                                    ) : (
-                                      <FaTrash size={14} />
-                                    )}
-                                  </IconButton>
-                                </Tooltip>
-                              </TableCell>
+                              {hasWriteAccess && (
+                                <TableCell>
+                                  <Tooltip title="Remove association">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() =>
+                                        handleDelete(
+                                          user.associations[index].usrincassnrecid
+                                        )
+                                      }
+                                      disabled={isDeleting}
+                                    >
+                                      {isDeleting ? (
+                                        <FaSpinner
+                                          className="spinner"
+                                          size={14}
+                                        />
+                                      ) : (
+                                        <FaTrash size={14} />
+                                      )}
+                                    </IconButton>
+                                  </Tooltip>
+                                </TableCell>
+                              )}
                             </>
                           ) : (
-                            <TableCell colSpan={3}>
+                            <TableCell colSpan={hasWriteAccess ? 3 : 2}>
                               <Typography color="textSecondary">
                                 No companies associated
                               </Typography>
@@ -1039,16 +1048,18 @@ export default function DDIAssociationTable() {
           <Button onClick={cancelEditing} disabled={updateLoading}>
             Cancel
           </Button>
-          <Button
-            onClick={updateAssociations}
-            variant="contained"
-            disabled={updateLoading}
-            startIcon={
-              updateLoading && <FaSpinner className="spinner" size={14} />
-            }
-          >
-            {updateLoading ? "Updating..." : "Save Changes"}
-          </Button>
+          {hasWriteAccess && (
+            <Button
+              onClick={updateAssociations}
+              variant="contained"
+              disabled={updateLoading}
+              startIcon={
+                updateLoading && <FaSpinner className="spinner" size={14} />
+              }
+            >
+              {updateLoading ? "Updating..." : "Save Changes"}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </div>

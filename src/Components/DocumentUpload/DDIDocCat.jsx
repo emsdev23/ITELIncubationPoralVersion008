@@ -1,7 +1,5 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useContext } from "react";
 import Swal from "sweetalert2";
-// IPAdress is no longer needed here since the API instance handles the base URL
-// import { IPAdress } from "../Datafetching/IPAdrees";
 import { Download } from "lucide-react";
 import { FaTimes } from "react-icons/fa";
 
@@ -28,7 +26,9 @@ import CloseIcon from "@mui/icons-material/Close";
 
 // Import your reusable component and API instances
 import ReusableDataGrid from "../Datafetching/ReusableDataGrid";
-import api from "../Datafetching/api"; // Import both instances
+import api from "../Datafetching/api"; 
+import { DataContext } from "../Datafetching/DataProvider";
+import { useWriteAccess } from "../Datafetching/useWriteAccess";
 
 // Styled components (no changes here)
 const StyledBackdrop = styled(Backdrop)(({ theme }) => ({
@@ -69,6 +69,12 @@ const formatDate = (dateStr) => {
 };
 
 export default function DocCatTable() {
+  // --- CONTEXT & ACCESS CONTROL ---
+  const { menuItemsFromAPI } = useContext(DataContext);
+  
+  // Check write access (Using the same path as the standard Document Categories)
+  const hasWriteAccess = useWriteAccess("/Incubation/Dashboard/AddDocuments");
+
   // State declarations
   const userId = sessionStorage.getItem("userid");
   const token = sessionStorage.getItem("token");
@@ -97,17 +103,14 @@ export default function DocCatTable() {
   const fetchCategories = () => {
     setLoading(true);
     setError(null);
-    // Use the genericApi instance for this endpoint
     api
       .post(
         "/resources/generic/getddidoccatlist",
         {
-          // Request body (will be encrypted)
           userId: parseInt(userId) || 1,
           incUserId: incUserid,
         },
         {
-          // Axios config for headers
           headers: {
             "X-Module": "DDI Document Management",
             "X-Action": "Fetch DDI Document Categories",
@@ -115,7 +118,6 @@ export default function DocCatTable() {
         }
       )
       .then((response) => {
-        // Axios automatically parses the JSON and the interceptor decrypts it
         setCats(response.data.data || []);
         setLoading(false);
       })
@@ -178,11 +180,10 @@ export default function DocCatTable() {
             Swal.showLoading();
           },
         });
-        // Use the controllerApi instance and pass params in the config
         api
           .post(
             "/ddidoccatdelete",
-            {}, // Empty request body
+            {},
             {
               params: {
                 ddidoccatrecid: catId,
@@ -239,11 +240,10 @@ export default function DocCatTable() {
     const module = "DDI Document Management";
     const action = isEdit ? "Edit Category" : "Add Category";
 
-    // Use the controllerApi instance and pass all data in the params object
     api
       .post(
         endpoint,
-        {}, // Empty request body
+        {},
         {
           params: {
             ...(isEdit && { ddidoccatrecid: editCat.ddidoccatrecid }),
@@ -305,7 +305,7 @@ export default function DocCatTable() {
       .finally(() => setIsSaving(false));
   };
 
-  // --- MEMOIZED VALUES (no changes here) ---
+  // --- MEMOIZED VALUES ---
   const columns = useMemo(
     () => [
       {
@@ -358,42 +358,46 @@ export default function DocCatTable() {
         sortable: true,
         type: "date",
       },
-      {
-        field: "actions",
-        headerName: "Actions",
-        width: 150,
-        sortable: false,
-        filterable: false,
-        renderCell: (params) => {
-          if (!params || !params.row) return null;
-          return (
-            <Box>
-              <ActionButton
-                color="edit"
-                onClick={() => openEditModal(params.row)}
-                disabled={isSaving || isDeleting[params.row.ddidoccatrecid]}
-                title="Edit"
-              >
-                <EditIcon fontSize="small" />
-              </ActionButton>
-              <ActionButton
-                color="delete"
-                onClick={() => handleDelete(params.row.ddidoccatrecid)}
-                disabled={isSaving || isDeleting[params.row.ddidoccatrecid]}
-                title="Delete"
-              >
-                {isDeleting[params.row.ddidoccatrecid] ? (
-                  <CircularProgress size={18} color="inherit" />
-                ) : (
-                  <DeleteIcon fontSize="small" />
-                )}
-              </ActionButton>
-            </Box>
-          );
-        },
-      },
+      ...(hasWriteAccess
+        ? [
+            {
+              field: "actions",
+              headerName: "Actions",
+              width: 150,
+              sortable: false,
+              filterable: false,
+              renderCell: (params) => {
+                if (!params || !params.row) return null;
+                return (
+                  <Box>
+                    <ActionButton
+                      color="edit"
+                      onClick={() => openEditModal(params.row)}
+                      disabled={isSaving || isDeleting[params.row.ddidoccatrecid]}
+                      title="Edit"
+                    >
+                      <EditIcon fontSize="small" />
+                    </ActionButton>
+                    <ActionButton
+                      color="delete"
+                      onClick={() => handleDelete(params.row.ddidoccatrecid)}
+                      disabled={isSaving || isDeleting[params.row.ddidoccatrecid]}
+                      title="Delete"
+                    >
+                      {isDeleting[params.row.ddidoccatrecid] ? (
+                        <CircularProgress size={18} color="inherit" />
+                      ) : (
+                        <DeleteIcon fontSize="small" />
+                      )}
+                    </ActionButton>
+                  </Box>
+                );
+              },
+            },
+          ]
+        : []),
     ],
-    [isSaving, isDeleting, openEditModal, handleDelete]
+    [hasWriteAccess, isSaving, isDeleting, openEditModal, handleDelete]
   );
 
   const exportConfig = useMemo(
@@ -422,7 +426,7 @@ export default function DocCatTable() {
     []
   );
 
-  // --- RENDER (no changes here) ---
+  // --- RENDER ---
   return (
     <Box sx={{ p: 2 }}>
       <Box
@@ -436,9 +440,11 @@ export default function DocCatTable() {
         <Typography variant="h4">
           📂 Due Deligence Document Categories
         </Typography>
-        <Button variant="contained" onClick={openAddModal} disabled={isSaving}>
-          + Add Category
-        </Button>
+        {hasWriteAccess && (
+          <Button variant="contained" onClick={openAddModal} disabled={isSaving}>
+            + Add Category
+          </Button>
+        )}
       </Box>
       {error && (
         <Box

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import styles from "./Modal.module.css";
 import api from "../Datafetching/api";
 import { X, Loader, Star, Send } from "lucide-react";
+import NewChatModal from "../ChatApp/NewChatModal";
+import Swal from "sweetalert2";
 
 const MentorModel = ({ isOpen, onClose, userId, incuserid }) => {
   const [mentors, setMentors] = useState([]);
@@ -43,18 +45,43 @@ const MentorModel = ({ isOpen, onClose, userId, incuserid }) => {
   }, [isOpen, userId, incuserid]);
 
   const handleRequest = async (mentor) => {
+    // Confirmation before requesting
+    const confirmation = await Swal.fire({
+      icon: "question",
+      title: "Request Mentor?",
+      text: `Are you sure you want to send a request to ${mentor.mentordetsname}?`,
+      showCancelButton: true,
+      confirmButtonText: "Yes, Send Request",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#4f46e5",
+      cancelButtonColor: "#6b7280",
+    });
+
+    if (!confirmation.isConfirmed) return;
+
     setRequestingId(mentor.mentordetsid);
+
     try {
       // await api.post("resources/generic/requestmentor", { mentorId: mentor.mentordetsid, userId });
       await new Promise((res) => setTimeout(res, 1000));
-      alert(`Request sent to ${mentor.mentordetsname}!`);
+
+      Swal.fire({
+        icon: "error",
+        title: "Request Failed",
+        text: "Failed to send request.",
+        confirmButtonColor: "#4f46e5",
+      });
     } catch {
-      alert("Failed to send request. Please try again.");
+      Swal.fire({
+        icon: "error",
+        title: "Request Failed",
+        text: "Failed to send request. Please try again.",
+        confirmButtonColor: "#4f46e5",
+      });
     } finally {
       setRequestingId(null);
     }
   };
-
   if (!isOpen) return null;
 
   const activeMentors = mentors.filter((m) => m.assigned_status === 1);

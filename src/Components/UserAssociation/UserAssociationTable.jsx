@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useContext } from "react";
 import {
   FaTrash,
   FaEdit,
@@ -17,6 +17,8 @@ import Swal from "sweetalert2";
 import "./UserAssociationTable.css";
 import { IPAdress } from "../Datafetching/IPAdrees";
 import api from "../Datafetching/api";
+import { DataContext } from "../Datafetching/DataProvider"; // Import Context
+import { useWriteAccess } from "../Datafetching/useWriteAccess"; // Import Hook
 
 // Material-UI imports
 import {
@@ -52,6 +54,12 @@ import { CSVLink } from "react-csv";
 import * as XLSX from "xlsx";
 
 export default function UserAssociationTable() {
+  // --- CONTEXT & ACCESS CONTROL ---
+  const { menuItemsFromAPI } = useContext(DataContext);
+  
+  // Check write access for this specific route
+  const hasWriteAccess = useWriteAccess("/Incubation/Dashboard/Userassociation");
+
   const userId = sessionStorage.getItem("userid");
   const token = sessionStorage.getItem("token");
   const incUserid = sessionStorage.getItem("incuserid");
@@ -97,8 +105,6 @@ export default function UserAssociationTable() {
 
       if (response.data.statusCode === 200) {
         // --- FIX: Ensure the response data is an array before setting state ---
-        // The API might return an object like { statusCode: 200, data: [...] }
-        // We check for both possibilities to be safe.
         const data = Array.isArray(response.data) ? response.data : 
                      (response.data.data && Array.isArray(response.data.data)) ? response.data.data : 
                      [];
@@ -110,7 +116,6 @@ export default function UserAssociationTable() {
       console.error("Error fetching user associations:", err);
       const errorMessage = err.response?.data?.message || err.message || "Failed to load user associations. Please try again.";
       setError(errorMessage);
-      // --- FIX: Reset associations to an empty array on error to prevent crashes ---
       setAssociations([]);
     } finally {
       setLoading(false);
@@ -119,7 +124,6 @@ export default function UserAssociationTable() {
 
   // Fetch incubatees list
   const fetchIncubatees = async () => {
-      // Note: setLoading is managed by fetchAssociations, but it's good to have it here too if called independently.
       try {
         const response = await api.post("/resources/generic/getinclist", {
           userId: userId || null,
@@ -127,7 +131,6 @@ export default function UserAssociationTable() {
         });
 
         if (response.data.statusCode === 200) {
-          // --- FIX: Ensure the response data is an array ---
           const data = Array.isArray(response.data) ? response.data : 
                        (response.data.data && Array.isArray(response.data.data)) ? response.data.data : 
                        [];
@@ -139,7 +142,6 @@ export default function UserAssociationTable() {
         console.error("Error fetching incubatees:", err);
         const errorMessage = err.response?.data?.message || err.message || "Failed to load incubatees. Please try again.";
         Swal.fire("❌ Error", errorMessage, "error");
-        // --- FIX: Reset incubatees to an empty array on error ---
         setIncubatees([]);
       }
     };
@@ -151,10 +153,9 @@ export default function UserAssociationTable() {
 
   // Normalize the associations data to handle both associated and unassociated users
   const normalizedData = useMemo(() => {
-    // --- FIX: Add a defensive check to ensure 'associations' is an array ---
     if (!Array.isArray(associations)) {
       console.error("Associations state is not an array:", associations);
-      return []; // Return an empty array to prevent the app from crashing
+      return []; 
     }
 
     const userMap = {};
@@ -198,7 +199,6 @@ export default function UserAssociationTable() {
   const filteredData = useMemo(() => {
     let filtered = [...normalizedData];
 
-    // Apply search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((user) =>
@@ -206,7 +206,6 @@ export default function UserAssociationTable() {
       );
     }
 
-    // Apply column filters
     if (columnFilters.usersname) {
       const nameQuery = columnFilters.usersname.toLowerCase();
       filtered = filtered.filter((user) =>
@@ -251,7 +250,6 @@ export default function UserAssociationTable() {
         };
       });
 
-      // Remove users with no associations after filtering
       filtered = filtered.filter(
         (user) =>
           user.associations.length > 0 || user.usersname.includes(searchQuery)
@@ -268,7 +266,6 @@ export default function UserAssociationTable() {
     return [...filteredData].sort((a, b) => {
       let aValue, bValue;
 
-      // Get the values to compare based on the column
       switch (sortColumn) {
         case "usersname":
           aValue = a.usersname || "";
@@ -282,13 +279,11 @@ export default function UserAssociationTable() {
           return 0;
       }
 
-      // Compare the values
       if (typeof aValue === "string") {
         return sortDirection === "asc"
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
       } else {
-        // For numbers and dates
         return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
       }
     });
@@ -350,12 +345,11 @@ export default function UserAssociationTable() {
   };
 
   const handleFilterChange = (column, value) => {
-    // Apply filter immediately as user types
     setColumnFilters((prev) => ({
       ...prev,
       [column]: value,
     }));
-    setPage(0); // Reset to first page when filtering
+    setPage(0); 
   };
 
   const clearFilter = () => {
@@ -378,11 +372,9 @@ export default function UserAssociationTable() {
 
   // Function to handle sorting
   const handleSort = (column) => {
-    // If clicking the same column, toggle direction
     if (column === sortColumn) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
-      // If clicking a new column, set it and default to ascending
       setSortColumn(column);
       setSortDirection("asc");
     }
@@ -447,7 +439,6 @@ export default function UserAssociationTable() {
       (assoc) => !selectedIncubatees.includes(assoc.usrincassnincubateesrecid)
     );
 
-    // --- REFACTORED: Use the 'api' instance for adding associations ---
     const addPromises = toAdd.map((incubateeId) => {
       return api.post("/addUserIncubationAssociation", null, {
         params: {
@@ -458,8 +449,6 @@ export default function UserAssociationTable() {
           usrincassnadminstate: 1,
         },
         headers: {
-          // The Authorization token is typically handled by an interceptor in the 'api' instance.
-          // We include the custom headers required by the backend.
           userid: userId || "1",
           "X-Module": "DDI User Association",
           "X-Action": "Add/Edit DDI user Association",
@@ -472,7 +461,6 @@ export default function UserAssociationTable() {
           return { success: true, incubateeId, action: "add" };
         })
         .catch((error) => {
-          // Extract a more informative error message from the Axios error object
           const errorMessage = error.response?.data?.message || error.message || "An unknown error occurred";
           return {
             success: false,
@@ -483,17 +471,12 @@ export default function UserAssociationTable() {
         });
     });
 
-    // --- REFACTORED: Use the 'api' instance for removing associations ---
     const removePromises = toRemove.map((association) => {
-      // Using the centralized 'api' instance for consistency and automatic auth handling.
       return api.post("/deleteUserIncubationAssociation", null, {
-        // Using the 'params' object is the standard, clean way to send query parameters with Axios.
         params: {
           usrincassnmodifiedby: userId || "1",
           usrincassnrecid: association.usrincassnrecid,
         },
-        // Custom headers required by the backend are included here.
-        // The 'Authorization' header is likely added automatically by an interceptor in the 'api' instance.
         headers: {
           userid: userId || "1",
           "X-Module": "DDI User Association",
@@ -501,12 +484,9 @@ export default function UserAssociationTable() {
         },
       })
         .then((res) => {
-          // Check the status code from the response body, as is common with many APIs.
           if (res.data.statusCode !== 200) {
-            // Throw an error to be caught by the .catch block, using the server's message if available.
             throw new Error(res.data.message || "Failed to remove association");
           }
-          // Return a structured object for the Promise.all handler to process.
           return {
             success: true,
             associationId: association.usrincassnrecid,
@@ -514,9 +494,7 @@ export default function UserAssociationTable() {
           };
         })
         .catch((error) => {
-          // Robustly extract the most informative error message possible.
           const errorMessage = error.response?.data?.message || error.message || "An unknown error occurred";
-          // Return a structured error object consistent with the success case.
           return {
             success: false,
             associationId: association.usrincassnrecid,
@@ -608,7 +586,6 @@ export default function UserAssociationTable() {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
-
             userid: userId || "1",
             "X-Module": "user Association",
             "X-Action": "Delete  Operator user Association",
@@ -830,6 +807,8 @@ export default function UserAssociationTable() {
                       </Tooltip>
                     </Box>
                   </TableCell>
+                  {/* Only show Actions Header if user has Write Access */}
+                  {hasWriteAccess && (
                   <TableCell>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Typography>Actions</Typography>
@@ -842,6 +821,7 @@ export default function UserAssociationTable() {
                       )}
                     </Box>
                   </TableCell>
+                  )}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -884,14 +864,17 @@ export default function UserAssociationTable() {
                                   >
                                     {user.usersname}
                                   </Typography>
-                                  <Tooltip title="Edit associations">
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => startEditing(user)}
-                                    >
-                                      <FaEdit size={16} />
-                                    </IconButton>
-                                  </Tooltip>
+                                  {/* Conditionally Render Edit Button */}
+                                  {hasWriteAccess && (
+                                    <Tooltip title="Edit associations">
+                                      <IconButton
+                                        size="small"
+                                        onClick={() => startEditing(user)}
+                                      >
+                                        <FaEdit size={16} />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
                                 </Box>
                               </TableCell>
                               <TableCell
@@ -931,31 +914,39 @@ export default function UserAssociationTable() {
                                 {user.associations[index]
                                   .usrincassncreatedbyname || "N/A"}
                               </TableCell>
-                              <TableCell>
-                                <Tooltip title="Remove association">
-                                  <IconButton
-                                    size="small"
-                                    onClick={() =>
-                                      handleDelete(
-                                        user.associations[index].usrincassnrecid
-                                      )
-                                    }
-                                    disabled={isDeleting}
-                                  >
-                                    {isDeleting ? (
-                                      <FaSpinner
-                                        className="spinner"
-                                        size={14}
-                                      />
-                                    ) : (
-                                      <FaTrash size={14} />
-                                    )}
-                                  </IconButton>
-                                </Tooltip>
-                              </TableCell>
+                              {/* Only Render Actions Cell if user has Write Access */}
+                              {hasWriteAccess && (
+                                <TableCell>
+                                  <Tooltip title="Remove association">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() =>
+                                        handleDelete(
+                                          user.associations[index].usrincassnrecid
+                                        )
+                                      }
+                                      disabled={isDeleting}
+                                    >
+                                      {isDeleting ? (
+                                        <FaSpinner
+                                          className="spinner"
+                                          size={14}
+                                        />
+                                      ) : (
+                                        <FaTrash size={14} />
+                                      )}
+                                    </IconButton>
+                                  </Tooltip>
+                                </TableCell>
+                              )}
                             </>
                           ) : (
-                            <TableCell colSpan={3}>
+                            // If no associations, and no write access, we don't need an empty cell spanning 3 columns
+                            // But if there IS write access, we might want to show "No companies associated" in the Companies col,
+                            // and empty actions col. 
+                            // The original code spanned 3 columns (Companies, Associated By, Actions).
+                            // We need to adjust colSpan based on access.
+                            <TableCell colSpan={hasWriteAccess ? 3 : 2}>
                               <Typography color="textSecondary">
                                 No companies associated
                               </Typography>
@@ -1040,6 +1031,8 @@ export default function UserAssociationTable() {
       </Popover>
 
       {/* Edit Modal */}
+      {/* The modal can only be opened via the Edit button, which is hidden if !hasWriteAccess. 
+          However, good practice ensures the Save button also checks access. */}
       <Dialog
         open={Boolean(editingUserId)}
         onClose={cancelEditing}
@@ -1083,16 +1076,18 @@ export default function UserAssociationTable() {
           <Button onClick={cancelEditing} disabled={updateLoading}>
             Cancel
           </Button>
-          <Button
-            onClick={updateAssociations}
-            variant="contained"
-            disabled={updateLoading}
-            startIcon={
-              updateLoading && <FaSpinner className="spinner" size={14} />
-            }
-          >
-            {updateLoading ? "Updating..." : "Save Changes"}
-          </Button>
+          {hasWriteAccess && (
+            <Button
+              onClick={updateAssociations}
+              variant="contained"
+              disabled={updateLoading}
+              startIcon={
+                updateLoading && <FaSpinner className="spinner" size={14} />
+              }
+            >
+              {updateLoading ? "Updating..." : "Save Changes"}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </div>

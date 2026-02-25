@@ -78,25 +78,26 @@ const StyledBackdrop = styled(Backdrop)(({ theme }) => ({
   color: "#fff",
 }));
 
+// UPDATED: Styled ActionButton to match TrainingModule logic
 const ActionButton = styled(IconButton)(({ theme, color }) => ({
   margin: theme.spacing(0.5),
   backgroundColor:
     color === "edit"
       ? theme.palette.primary.main
-      : color === "disable"
-      ? theme.palette.error.main
-      : color === "enable"
+      : color === "on" // ON State -> Green
       ? theme.palette.success.main
-      : theme.palette.error.main,
+      : color === "off" // OFF State -> Grey (The requested change)
+      ? theme.palette.grey[500]
+      : theme.palette.error.main, // Fallback / Delete
   color: "white",
   "&:hover": {
     backgroundColor:
       color === "edit"
         ? theme.palette.primary.dark
-        : color === "disable"
-        ? theme.palette.error.dark
-        : color === "enable"
+        : color === "on"
         ? theme.palette.success.dark
+        : color === "off" // OFF Hover -> Darker Grey
+        ? theme.palette.grey[700]
         : theme.palette.error.dark,
   },
   "&.disabled": {
@@ -227,7 +228,7 @@ const formatDate = (dateStr) => {
 };
 
 // Using forwardRef to allow parent components to access methods
-const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {
+  const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {  
   const hasWriteAccess = useWriteAccess("/Incubation/Dashboard/AddDocuments");
 
   const userId = sessionStorage.getItem("userid");
@@ -2213,8 +2214,9 @@ const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {
 
           return (
             <Box>
+              {/* UPDATED: Toggle Status Button Logic */}
               <ActionButton
-                color={isCurrentlyEnabled ? "enable" : "disable"}
+                color={isCurrentlyEnabled ? "on" : "off"}
                 onClick={() => handleToggleStatus(params.row)}
                 disabled={
                   isSaving ||
@@ -2224,6 +2226,8 @@ const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {
                 title={isCurrentlyEnabled ? "Disable" : "Enable"}
               >
                 {isToggling === params.row.documentsrecid ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : isCurrentlyEnabled ? (
                   <ToggleOnIcon fontSize="small" />
                 ) : (
                   <ToggleOffIcon fontSize="small" />

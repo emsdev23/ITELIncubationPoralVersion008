@@ -678,14 +678,15 @@ export default function MentorClassificationTable() {
           <FaChalkboardTeacher style={{ marginRight: "8px" }} />
           Mentor Classifications
         </Typography>
+        {hasWriteAccess && (
         <Button
           variant="contained"
           startIcon={<FaPlus />}
           onClick={openAddModal}
-          disabled={!hasWriteAccess}
         >
           Add Classification
         </Button>
+        )}
       </Box>
 
       {error && (

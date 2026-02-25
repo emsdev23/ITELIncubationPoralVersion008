@@ -958,15 +958,16 @@ export default function MentorAssociationTable() {
                                   >
                                     {mentor.mentorname}
                                   </Typography>
+                                  {hasWriteAccess && (
                                   <Tooltip title="Edit associations">
                                     <IconButton
                                       size="small"
                                       onClick={() => startEditing(mentor)}
-                                      disabled={!hasWriteAccess}
                                     >
                                       <FaEdit size={16} />
                                     </IconButton>
                                   </Tooltip>
+                                  )}
                                 </Box>
                               </TableCell>
                               <TableCell
@@ -1006,6 +1007,7 @@ export default function MentorAssociationTable() {
                                 {mentor.associations[index]
                                   .mentorincassncreatedbyname || "N/A"}
                               </TableCell>
+                              {hasWriteAccess && (
                               <TableCell>
                                 <Tooltip title="Remove association">
                                   <IconButton
@@ -1016,7 +1018,6 @@ export default function MentorAssociationTable() {
                                           .mentorincassnid,
                                       )
                                     }
-                                    disabled={isDeleting || !hasWriteAccess}
                                   >
                                     {isDeleting ? (
                                       <FaSpinner
@@ -1029,6 +1030,7 @@ export default function MentorAssociationTable() {
                                   </IconButton>
                                 </Tooltip>
                               </TableCell>
+                              )}
                             </>
                           ) : (
                             <TableCell colSpan={3}>

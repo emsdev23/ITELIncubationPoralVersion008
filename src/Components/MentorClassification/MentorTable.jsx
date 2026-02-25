@@ -162,27 +162,46 @@ export default function MentorTable() {
 
   const fetchDropdownOptions = useCallback(async () => {
     try {
-      // 1. Get Mentor Types
+      // 1️⃣ Get Mentor Types
       const typePayload = {
         userId: userId || "20",
         userIncId: incUserid || "1",
       };
-      
-      const typeRes = await api.post("/resources/generic/getmentortypedetails", typePayload);
+
+      const typeRes = await api.post(
+        "/resources/generic/getmentortypedetails",
+        typePayload
+      );
+
       if (typeRes.data.statusCode === 200) {
-        setMentorTypes(Array.isArray(typeRes.data.data) ? typeRes.data.data : []);
+        const filteredTypes = (Array.isArray(typeRes.data.data)
+          ? typeRes.data.data
+          : []
+        ).filter((item) => item.mentortypeadminstate === 1);
+
+        setMentorTypes(filteredTypes);
       }
 
-      // 2. Get Classifications
+      // 2️⃣ Get Classifications
       const classPayload = {
         userId: userId || 39,
         userIncId: incUserid || "1",
       };
 
-      const classRes = await api.post("/resources/generic/getmentorclassificationdetails", classPayload);
+      const classRes = await api.post(
+        "/resources/generic/getmentorclassificationdetails",
+        classPayload
+      );
+
       if (classRes.data.statusCode === 200) {
-        setClassifications(Array.isArray(classRes.data.data) ? classRes.data.data : []);
+        const filteredClassifications = (Array.isArray(classRes.data.data)
+          ? classRes.data.data
+          : []
+        ).filter((item) => item.mentorclassetadminstate === 1);
+
+        setClassifications(filteredClassifications);
       }
+
     } catch (err) {
       console.error("Error fetching dropdown options:", err);
     }
@@ -204,7 +223,7 @@ export default function MentorTable() {
         cancelButtonColor: "#6c757d",
         confirmButtonText: `Yes, ${actionText} it!`,
         cancelButtonText: "Cancel",
-      }).then((result) => {
+      }).then(async (result) => {
         if (result.isConfirmed) {
           setIsToggling((prev) => ({
             ...prev,
@@ -236,15 +255,63 @@ export default function MentorTable() {
             mentordetsmodifiedby: userId || "1",
           };
 
-          // Using api.post instead of fetch
+          // 1. Update Mentor
           api.post("/updateMentor", bodyPayload, {
              headers: {
                "X-Module": "Mentor Management",
                "X-Action": "Update Mentor Status",
              },
           })
-            .then((response) => {
+            .then(async (response) => {
               if (response.data.statusCode === 200) {
+                
+                // 2. If Mentor update successful, update the linked User
+                if (mentor.usersrecid) {
+                  try {
+                    // Fetch users to find the matching record
+                    const userPayload = {
+                      userId: userId || null,
+                      userIncId: incUserid 
+                    };
+
+                    const usersRes = await api.post(
+                      "/resources/generic/getusers",
+                      userPayload
+                    );
+
+                    if (usersRes.data.statusCode === 200 && Array.isArray(usersRes.data.data)) {
+                      // Find the specific user linked to this mentor
+                      const targetUser = usersRes.data.data.find(
+                        (u) => u.usersrecid === mentor.usersrecid
+                      );
+
+                      if (targetUser) {
+                        // Prepare User Update Payload
+                        const userUpdatePayload = {
+                          usersemail: targetUser.usersemail,
+                          usersname: targetUser.usersname,
+                          usersrolesrecid: targetUser.usersrolesrecid,
+                          userspassword: targetUser.userspassword,
+                          usersadminstate: newState.toString(), // "1" or "0"
+                          usersmodifiedby: userId || "system",
+                          usersrecid: targetUser.usersrecid,
+                          usersincubationsrecid: targetUser.usersincubationsrecid,
+                          usersmentorid:
+                            targetUser.usersmentorid !== undefined && targetUser.usersmentorid !== null
+                              ? targetUser.usersmentorid
+                              : null,
+                        };
+
+                        // Call Update User API
+                        await api.post("/updateUser", userUpdatePayload);
+                      }
+                    }
+                  } catch (userErr) {
+                    console.error("Error updating linked user status:", userErr);
+                    // Log error but don't block main success flow
+                  }
+                }
+
                 Swal.fire(
                   "Success!",
                   `Mentor ${actionText}d successfully!`,
@@ -268,7 +335,7 @@ export default function MentorTable() {
         }
       });
     },
-    [userId, fetchMentors]
+    [userId, incUserid, fetchMentors]
   );
 
   const createMentor = useCallback(async () => {
@@ -727,14 +794,15 @@ export default function MentorTable() {
           <FaChalkboardTeacher style={{ marginRight: "8px" }} />
           Mentors Directory
         </Typography>
+        {hasWriteAccess && (
         <Button
           variant="contained"
           startIcon={<FaPlus />}
           onClick={openAddModal}
-          disabled={!hasWriteAccess}
         >
           Add Mentor
         </Button>
+        )}
       </Box>
 
       {error && (

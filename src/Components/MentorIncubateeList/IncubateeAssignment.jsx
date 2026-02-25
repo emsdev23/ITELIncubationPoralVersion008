@@ -4,7 +4,7 @@ import styles from "../Navbar.module.css"; // CSS module for scoped styles
 import ITELLogo from "../../assets/ITEL_Logo.png"; // Logo image
 import { NavLink } from "react-router-dom";
 import { FolderDown, MoveLeft } from "lucide-react"; // Icon for the button
-import IncubeeAssignmentTable from "./IncubeeAssignmentTable";
+import IncubeeAssignmentTable from "./IncubateeAssignmentTable";
 import { IPAdress } from "../Datafetching/IPAdrees";
 
 export default function IncubateeAssignment() {

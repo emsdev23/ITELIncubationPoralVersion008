@@ -231,6 +231,7 @@ function AppContent() {
                   <IncubateeTable />
                 </ProtectedRoute>
               }
+              
             />
 
             <Route path="/reset-password" element={<ResetPassword />} />

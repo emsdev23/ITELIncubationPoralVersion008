@@ -1,11 +1,13 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useContext } from "react";
 import Swal from "sweetalert2";
-import { FaEdit, FaPlus, FaSpinner, FaPowerOff, FaFilter, FaTimes } from "react-icons/fa";
+import { FaEdit, FaPlus, FaSpinner, FaFilter, FaTimes } from "react-icons/fa";
 import { Download } from "lucide-react";
 import "./UserTable.css";
 import { IPAdress } from "../Datafetching/IPAdrees";
 import * as XLSX from "xlsx";
 import api from "../Datafetching/api";
+import { useWriteAccess } from "../Datafetching/useWriteAccess";
+import { DataContext } from "../Datafetching/DataProvider"; // Import Context
 
 // Material UI imports
 import { DataGrid } from "@mui/x-data-grid";
@@ -30,10 +32,11 @@ import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
 import EditIcon from "@mui/icons-material/Edit";
 
-import ToggleOnIcon from "@mui/icons-material/ToggleOn"; // ON Icon (Green Pill)
-import ToggleOffIcon from "@mui/icons-material/ToggleOff"; // OFF Icon (Grey Pill)
-import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // Status Active
-import CancelIcon from "@mui/icons-material/Cancel"; // Status Inactive
+import ToggleOnIcon from "@mui/icons-material/ToggleOn";
+import ToggleOffIcon from "@mui/icons-material/ToggleOff";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
+
 // Styled components
 const StyledPaper = styled(Paper)(({ theme }) => ({
   width: "100%",
@@ -50,16 +53,24 @@ const ActionButton = styled(IconButton)(({ theme, color }) => ({
   backgroundColor:
     color === "edit"
       ? theme.palette.primary.main
+      : color === "on"
+      ? theme.palette.success.main
+      : color === "off"
+      ? theme.palette.grey[500]
       : color === "disable"
-      ? theme.palette.error.main
-      : theme.palette.success.main, // Enable is green
+      ? theme.palette.grey[500]
+      : theme.palette.success.main,
   color: "white",
   "&:hover": {
     backgroundColor:
       color === "edit"
         ? theme.palette.primary.dark
+        : color === "on"
+        ? theme.palette.success.dark
+        : color === "off"
+        ? theme.palette.grey[700]
         : color === "disable"
-        ? theme.palette.error.dark
+        ? theme.palette.grey[700]
         : theme.palette.success.dark,
   },
   "&.disabled": {
@@ -70,6 +81,14 @@ const ActionButton = styled(IconButton)(({ theme, color }) => ({
 }));
 
 export default function UserTable() {
+  // --- CONTEXT & ACCESS CONTROL ---
+  const { menuItemsFromAPI } = useContext(DataContext);
+
+  // Check write access (Ensure the path matches your routing configuration)
+  const hasWriteAccess = useWriteAccess(
+    "/Incubation/Dashboard/TrainingManagementPage"
+  );
+
   const userId = sessionStorage.getItem("userid");
   const token = sessionStorage.getItem("token");
   const incUserid = sessionStorage.getItem("incuserid");
@@ -86,52 +105,39 @@ export default function UserTable() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIncubation, setSelectedIncubation] = useState(null);
 
-  // Pagination state for Material UI
   const [paginationModel, setPaginationModel] = useState({
     page: 0,
     pageSize: 5,
   });
 
-  // Column-specific filter states
   const [columnFilters, setColumnFilters] = useState({
     usersname: "",
     usersemail: "",
-    rolesname: "", 
+    rolesname: "",
     userscreatedtime: "",
     usersmodifiedtime: "",
     userscreatedby: "",
     usersmodifiedby: "",
   });
 
-  // Filter popover states
   const [filterAnchorEl, setFilterAnchorEl] = useState(null);
   const [filterColumn, setFilterColumn] = useState(null);
 
-  // Loading states for operations
   const [isAdding, setIsAdding] = useState(false);
   const [isUpdating, setIsUpdating] = useState(null);
-  const [isToggling, setIsToggling] = useState(null); // For Enable/Disable action
+  const [isToggling, setIsToggling] = useState(null);
 
-  // Check if XLSX is available
   const isXLSXAvailable = !!XLSX;
-
-  // Define the role IDs that are allowed to select an incubatee
   const INCUBATEE_ROLE_IDS = [4, 5, 6];
   const rolebaseincuserid = roleId === "0" ? 1 : incUserid;
-
-  // Check if current user can select incubation (only when roleId is 0)
   const canSelectIncubation = roleId === "0";
-
-  // Check if incubatee dropdown should be enabled
   const isIncubateeEnabled = selectedIncubation !== null;
 
-  // Function to format date
   const formatDate = (dateStr) => {
     if (!dateStr) return "-";
     try {
       const date = new Date(dateStr);
       if (isNaN(date.getTime())) return dateStr;
-
       return date
         .toLocaleString("en-US", {
           year: "numeric",
@@ -148,13 +154,12 @@ export default function UserTable() {
     }
   };
 
-  // Filter users based on search query and column filters
   const filteredData = useMemo(() => {
     let result = users;
 
     if (searchQuery.trim() !== "") {
       result = result.filter((user) =>
-        user.usersname.toLowerCase().includes(searchQuery.toLowerCase()),
+        user.usersname.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -171,7 +176,6 @@ export default function UserTable() {
           .toLowerCase()
           .includes(columnFilters.usersemail.toLowerCase());
 
-      // Use rolesname for filtering
       const matchesRole =
         !columnFilters.rolesname ||
         (user.rolesname || "")
@@ -216,15 +220,9 @@ export default function UserTable() {
     return result;
   }, [users, searchQuery, columnFilters]);
 
-  const clearSearch = () => {
-    setSearchQuery("");
-  };
+  const clearSearch = () => setSearchQuery("");
+  const handleIncubationSelect = (incubation) => setSelectedIncubation(incubation);
 
-  const handleIncubationSelect = (incubation) => {
-    setSelectedIncubation(incubation);
-  };
-
-  // Export to CSV function
   const exportToCSV = () => {
     const exportData = filteredData.map((user, index) => ({
       "S.No": index + 1,
@@ -249,7 +247,7 @@ export default function UserTable() {
               ? `"${value}"`
               : value;
           })
-          .join(","),
+          .join(",")
       ),
     ].join("\n");
 
@@ -257,17 +255,13 @@ export default function UserTable() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute(
-      "download",
-      `users_${new Date().toISOString().slice(0, 10)}.csv`,
-    );
+    link.setAttribute("download", `users_${new Date().toISOString().slice(0, 10)}.csv`);
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  // Export to Excel function
   const exportToExcel = () => {
     if (!isXLSXAvailable) {
       console.error("XLSX library not available");
@@ -299,7 +293,6 @@ export default function UserTable() {
     }
   };
 
-  // Define columns for DataGrid
   const columns = useMemo(
     () => [
       {
@@ -343,7 +336,7 @@ export default function UserTable() {
         ),
       },
       {
-        field: "rolesname", // Using rolesname directly
+        field: "rolesname",
         headerName: "Role Name",
         width: 180,
         sortable: true,
@@ -392,7 +385,11 @@ export default function UserTable() {
                   cursor: "default",
                 }}
               >
-                {isActive ? <CheckCircleIcon fontSize="small" /> : <CancelIcon fontSize="small" />}
+                {isActive ? (
+                  <CheckCircleIcon fontSize="small" />
+                ) : (
+                  <CancelIcon fontSize="small" />
+                )}
               </IconButton>
               <Typography variant="body2" sx={{ fontWeight: 500 }}>
                 {isActive ? "Active" : "Inactive"}
@@ -511,69 +508,74 @@ export default function UserTable() {
           </Box>
         ),
       },
-      {
-        field: "actions",
-        headerName: "Actions",
-        width: 150,
-        sortable: false,
-        renderCell: (params) => {
-          if (!params || !params.row) return null;
+      ...(hasWriteAccess
+        ? [
+            {
+              field: "actions",
+              headerName: "Actions",
+              width: 150,
+              sortable: false,
+              renderCell: (params) => {
+                if (!params || !params.row) return null;
 
-          // If state is 0 (Disabled), Edit should be disabled
-          const isDisabled = params.row.usersadminstate === 0;
-          const isCurrentlyEnabled = params.row.usersadminstate === 1;
+                const isDisabled = params.row.usersadminstate === 0;
+                const isCurrentlyEnabled = params.row.usersadminstate === 1;
 
-          return (
-            <Box>
-              <ActionButton
-                  color={isCurrentlyEnabled ? "enable" : "disable"}
-                  onClick={() => handleToggleStatus(params.row)}
-                  disabled={
-                    isUpdating === params.row.usersrecid ||
-                    isToggling === params.row.usersrecid
-                  }
-                  title={isCurrentlyEnabled ? "Disable User" : "Enable User"}
-                >
-                  {isToggling === params.row.usersrecid ? (
-                    <ToggleOnIcon fontSize="small" />
-                  ) : (
-                    <ToggleOffIcon fontSize="small" />
-                  )}
-                </ActionButton>
+                const protectedRoles = ["Incubatees Admin", "Incubator Admin"];
+                const isProtectedRole = protectedRoles.includes(params.row.rolesname);
 
-              {/* Edit Button */}
-              <ActionButton
-                color="edit"
-                onClick={() => handleEdit(params.row)}
-                disabled={
-                  isUpdating === params.row.usersrecid ||
-                  isToggling === params.row.usersrecid ||
-                  isDisabled // Cannot edit if user is disabled
-                }
-                title={
-                  isDisabled
-                    ? "Cannot edit disabled users"
-                    : "Edit User"
-                }
-                className={isDisabled ? "disabled" : ""}
-              >
-                {isUpdating === params.row.usersrecid ? (
-                  <FaSpinner className="spinner" size={18} />
-                ) : (
-                  <EditIcon fontSize="small" />
-                )}
-              </ActionButton>
+                return (
+                  <Box>
+                    <ActionButton
+                      color={isCurrentlyEnabled ? "on" : "off"}
+                      onClick={() => handleToggleStatus(params.row)}
+                      disabled={
+                        isUpdating === params.row.usersrecid ||
+                        isToggling === params.row.usersrecid ||
+                        (isCurrentlyEnabled && isProtectedRole)
+                      }
+                      title={
+                        isProtectedRole && isCurrentlyEnabled
+                          ? "This role cannot be disabled"
+                          : isCurrentlyEnabled
+                          ? "Disable User"
+                          : "Enable User"
+                      }
+                    >
+                      {isToggling === params.row.usersrecid ? (
+                        <ToggleOnIcon fontSize="small" />
+                      ) : (
+                        <ToggleOffIcon fontSize="small" />
+                      )}
+                    </ActionButton>
 
-              
-            </Box>
-          );
-        },
-      },
+                    <ActionButton
+                      color="edit"
+                      onClick={() => handleEdit(params.row)}
+                      disabled={
+                        isUpdating === params.row.usersrecid ||
+                        isToggling === params.row.usersrecid ||
+                        isDisabled
+                      }
+                      title={isDisabled ? "Cannot edit disabled users" : "Edit User"}
+                      className={isDisabled ? "disabled" : ""}
+                    >
+                      {isUpdating === params.row.usersrecid ? (
+                        <FaSpinner className="spinner" size={18} />
+                      ) : (
+                        <EditIcon fontSize="small" />
+                      )}
+                    </ActionButton>
+                  </Box>
+                );
+              },
+            },
+          ]
+        : []),
     ],
-    [isUpdating, isToggling, columnFilters],
+    [isUpdating, isToggling, columnFilters, hasWriteAccess]
   );
 
-  // Add unique ID to each row if not present
   const rowsWithId = useMemo(() => {
     return filteredData.map((user, index) => ({
       ...user,
@@ -581,7 +583,6 @@ export default function UserTable() {
     }));
   }, [filteredData]);
 
-  // Filter popover handlers
   const handleFilterClick = (event, column) => {
     setFilterAnchorEl(event.currentTarget);
     setFilterColumn(column);
@@ -611,7 +612,7 @@ export default function UserTable() {
     setColumnFilters({
       usersname: "",
       usersemail: "",
-      rolesname: "", 
+      rolesname: "",
       userscreatedtime: "",
       usersmodifiedtime: "",
       userscreatedby: "",
@@ -621,10 +622,9 @@ export default function UserTable() {
   };
 
   const hasActiveFilters = Object.values(columnFilters).some(
-    (value) => value !== "",
+    (value) => value !== ""
   );
 
-  // Fetch all users
   const fetchUsers = async () => {
     setLoading(true);
     setError(null);
@@ -655,7 +655,6 @@ export default function UserTable() {
     }
   };
 
-  // Fetch roles for dropdown
   const fetchRoles = async () => {
     try {
       const response = await api.post("/resources/generic/getrolelist", {
@@ -680,7 +679,6 @@ export default function UserTable() {
     }
   };
 
-  // Fetch incubatees for dropdown
   const fetchIncubatees = async (incubationId = null) => {
     try {
       const targetIncubationId =
@@ -709,7 +707,6 @@ export default function UserTable() {
     }
   };
 
-  // Fetch incubations for dropdown
   const fetchIncubations = async () => {
     if (!canSelectIncubation) {
       return Promise.resolve([]);
@@ -738,7 +735,6 @@ export default function UserTable() {
     }
   };
 
-  // Fetch all required data
   useEffect(() => {
     fetchUsers();
     setDropdownsLoading(true);
@@ -747,7 +743,6 @@ export default function UserTable() {
       .catch(() => setDropdownsLoading(false));
   }, []);
 
-  // Refetch data when selectedIncubation changes
   useEffect(() => {
     fetchUsers();
     fetchRoles();
@@ -762,7 +757,6 @@ export default function UserTable() {
     }
   }, [selectedIncubation]);
 
-  // UPDATED: Handle Enable/Disable with full payload matching Edit structure
   const handleToggleStatus = (user) => {
     const isCurrentlyEnabled = user.usersadminstate === 1;
     const actionText = isCurrentlyEnabled ? "disable" : "enable";
@@ -777,34 +771,102 @@ export default function UserTable() {
       cancelButtonColor: "#6c757d",
       confirmButtonText: `Yes, ${actionText} it!`,
       cancelButtonText: "Cancel",
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
         setIsToggling(user.usersrecid);
 
-        // Construct the full payload including all necessary fields exactly like Edit
         const bodyPayload = {
           usersemail: user.usersemail,
           usersname: user.usersname,
           usersrolesrecid: user.usersrolesrecid,
-          userspassword: user.userspassword, 
-          usersadminstate: newState.toString(), // The updated status (1 or 0)
+          userspassword: user.userspassword,
+          usersadminstate: newState.toString(),
           usersmodifiedby: userId || "system",
           usersrecid: user.usersrecid,
           usersincubationsrecid: user.usersincubationsrecid,
-          usersmentorid: user.usersmentorid !== undefined && user.usersmentorid !== null ? user.usersmentorid : null
+          usersmentorid:
+            user.usersmentorid !== undefined && user.usersmentorid !== null
+              ? user.usersmentorid
+              : null,
         };
 
-        // Use the update endpoint to change status
         api
           .post("/updateUser", bodyPayload)
-          .then((res) => {
+          .then(async (res) => {
             if (res.data.statusCode === 200) {
+              if (user.usersmentorid) {
+                try {
+                  const mentorPayload = {
+                    userId: "ALL",
+                    incUserId: selectedIncubation
+                      ? selectedIncubation.incubationsrecid
+                      : incUserid,
+                  };
+
+                  const mentorsRes = await api.post(
+                    "/resources/generic/getmentordetails",
+                    mentorPayload
+                  );
+
+                  if (
+                    mentorsRes.data.statusCode === 200 &&
+                    Array.isArray(mentorsRes.data.data)
+                  ) {
+                    const targetMentor = mentorsRes.data.data.find(
+                      (m) => m.mentordetsid === user.usersmentorid
+                    );
+
+                    if (targetMentor) {
+                      const mentorUpdatePayload = {
+                        mentordetsincubatorid:
+                          targetMentor.mentordetsincubatorid,
+                        mentordetsmnttypeid: targetMentor.mentordetsmnttypeid,
+                        mentordetsclasssetid: targetMentor.mentordetsclasssetid,
+                        mentordetsname: targetMentor.mentordetsname,
+                        mentordetsdesign: targetMentor.mentordetsdesign,
+                        mentordetsphone: targetMentor.mentordetsphone,
+                        mentordetsaddress: targetMentor.mentordetsaddress,
+                        mentordetsemail: targetMentor.mentordetsemail,
+                        mentordetsdomain: targetMentor.mentordetsdomain,
+                        mentordetspastexp: targetMentor.mentordetspastexp,
+                        mentordetslinkedin: targetMentor.mentordetslinkedin,
+                        mentordetswebsite: targetMentor.mentordetswebsite,
+                        mentordetsblog: targetMentor.mentordetsblog,
+                        mentordetsimagepath: targetMentor.mentordetsimagepath,
+                        mentordetstimecommitment:
+                          targetMentor.mentordetstimecommitment,
+                        mentordetsprevstupmentor:
+                          targetMentor.mentordetsprevstupmentor,
+                        mentordetscomment: targetMentor.mentordetscomment,
+                        mentordetsgender: targetMentor.mentordetsgender,
+                        mentordetsadminstate: newState,
+                        mentordetsid: targetMentor.mentordetsid,
+                        mentordetsmodifiedby: userId || "1",
+                      };
+
+                      await api.post("/updateMentor", null, {
+                        params: mentorUpdatePayload,
+                        headers: {
+                          "X-Module": "User Management",
+                          "X-Action": "Update Linked Mentor Status",
+                        },
+                      });
+                    }
+                  }
+                } catch (mentorErr) {
+                  console.error(
+                    "Error updating linked mentor status:",
+                    mentorErr
+                  );
+                }
+              }
+
               Swal.fire(
                 "Success!",
                 `${user.usersname} has been ${actionText}d.`,
-                "success",
+                "success"
               );
-              fetchUsers(); // Refresh list
+              fetchUsers();
             } else {
               throw new Error(res.data.message || `Failed to ${actionText} user`);
             }
@@ -814,7 +876,7 @@ export default function UserTable() {
             Swal.fire(
               "Error",
               `Failed to ${actionText} ${user.usersname}: ${err.message}`,
-              "error",
+              "error"
             );
           })
           .finally(() => {
@@ -840,11 +902,7 @@ export default function UserTable() {
       });
 
       try {
-        await Promise.all([
-          fetchRoles(),
-          fetchIncubatees(),
-          fetchIncubations(),
-        ]);
+        await Promise.all([fetchRoles(), fetchIncubatees(), fetchIncubations()]);
         setDropdownsLoading(false);
         Swal.close();
       } catch (error) {
@@ -862,7 +920,7 @@ export default function UserTable() {
           `<option value="" disabled selected>Select incubation</option>`,
           ...incubations.map(
             (incubation) =>
-              `<option value="${incubation.incubationsrecid}">${incubation.incubationsshortname}</option>`,
+              `<option value="${incubation.incubationsrecid}">${incubation.incubationsshortname}</option>`
           ),
         ].join("")
       : "";
@@ -870,7 +928,7 @@ export default function UserTable() {
       `<option value="" disabled selected>Select incubatee</option>`,
       ...incubatees.map(
         (incubatee) =>
-          `<option value="${incubatee.incubateesrecid}">${incubatee.incubateesname}</option>`,
+          `<option value="${incubatee.incubateesrecid}">${incubatee.incubateesname}</option>`
       ),
     ].join("");
 
@@ -955,8 +1013,8 @@ export default function UserTable() {
           usersincubationsrecid: canSelectIncubation
             ? incubation.value
             : selectedIncubation
-              ? selectedIncubation.incubationsrecid
-              : incUserid,
+            ? selectedIncubation.incubationsrecid
+            : incUserid,
           usersincubateesrecid: incubatee.value || null,
         };
       },
@@ -990,7 +1048,7 @@ export default function UserTable() {
                 '<option value="" disabled selected>Select incubatee</option>',
                 ...(response.data.data || []).map(
                   (incubatee) =>
-                    `<option value="${incubatee.incubateesrecid}">${incubatee.incubateesname}</option>`,
+                    `<option value="${incubatee.incubateesrecid}">${incubatee.incubateesname}</option>`
                 ),
               ].join("");
               incubateeSelect.innerHTML = options;
@@ -1067,7 +1125,7 @@ export default function UserTable() {
           Swal.fire(
             "❌ Error",
             response.data.message || "Failed to add user",
-            "error",
+            "error"
           );
         }
       } catch (err) {
@@ -1082,50 +1140,85 @@ export default function UserTable() {
   };
 
   const handleEdit = async (user) => {
-    // Prevent editing if the user is disabled
     if (user.usersadminstate === 0) {
-       Swal.fire("Restricted", "Cannot edit a disabled user. Please enable the user first.", "warning");
-       return;
+      Swal.fire(
+        "Restricted",
+        "Cannot edit a disabled user. Please enable the user first.",
+        "warning"
+      );
+      return;
     }
 
-    if (
-      dropdownsLoading ||
-      roles.length === 0 ||
-      incubatees.length === 0 ||
-      (canSelectIncubation && incubations.length === 0)
-    ) {
-      Swal.fire({
-        title: "Loading...",
-        text: "Please wait while we load the required data",
-        icon: "info",
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        showConfirmButton: false,
-      });
+    const userIncubationId = user.usersincubationsrecid || incUserid;
 
+    // 1. Fetch Roles specific to this user's incubation
+    let specificRoles = [];
+    try {
+      const roleRes = await api.post("/resources/generic/getrolelist", {
+        userId: userId || null,
+        incUserId: userIncubationId,
+      });
+      if (roleRes.data.statusCode === 200) {
+        specificRoles = roleRes.data.data || [];
+      }
+    } catch (err) {
+      console.error("Error fetching specific roles:", err);
+      specificRoles = roles;
+    }
+
+    // 2. Fetch Incubatees specific to this user's incubation
+    let specificIncubatees = [];
+    try {
+      const incRes = await api.post("/resources/generic/getinclist", {
+        userId: userId || null,
+        incUserId: userIncubationId,
+      });
+      if (incRes.data.statusCode === 200) {
+        specificIncubatees = incRes.data.data || [];
+      }
+    } catch (err) {
+      console.error("Error fetching specific incubatees:", err);
+      specificIncubatees = incubatees;
+    }
+
+    // 3. Fetch Incubations list if empty
+    if (canSelectIncubation && incubations.length === 0) {
       try {
-        await Promise.all([
-          fetchRoles(),
-          fetchIncubatees(),
-          fetchIncubations(),
-        ]);
-        setDropdownsLoading(false);
-        Swal.close();
-      } catch (error) {
-        Swal.close();
-        Swal.fire("❌ Error", "Failed to load dropdown data", "error");
-        return;
+        const incubationsRes = await api.post("/resources/generic/getincubationlist", {
+          userId: userId || null,
+          userIncId: "ALL",
+        });
+        if (incubationsRes.data.statusCode === 200) {
+          setIncubations(incubationsRes.data.data || []);
+        }
+      } catch (err) {
+        console.error("Error fetching incubations:", err);
       }
     }
 
-    const roleOptions = roles
+    // --- Generate Role Options ---
+    // We create a Set of IDs to quickly check if the user's current role exists in the dropdown
+    const existingRoleIds = new Set(specificRoles.map((r) => r.value));
+    let finalRoles = [...specificRoles];
+
+    // If the user's role ID is not in the fetched list, add it manually using data from the row
+    if (user.usersrolesrecid && !existingRoleIds.has(String(user.usersrolesrecid)) && !existingRoleIds.has(Number(user.usersrolesrecid))) {
+      finalRoles.unshift({
+        value: user.usersrolesrecid,
+        text: user.rolesname || "Unknown Role", // Using the name from your JSON response
+      });
+    }
+
+    const roleOptionsHTML = finalRoles
       .map(
         (role) =>
           `<option value="${role.value}" ${
             user.usersrolesrecid == role.value ? "selected" : ""
-          }>${role.text}</option>`,
+          }>${role.text}</option>`
       )
       .join("");
+
+    // --- Generate Incubation Options ---
     const incubationOptions = canSelectIncubation
       ? [
           `<option value="" ${
@@ -1137,24 +1230,42 @@ export default function UserTable() {
                 user.usersincubationsrecid == incubation.incubationsrecid
                   ? "selected"
                   : ""
-              }>${incubation.incubationsshortname}</option>`,
+              }>${incubation.incubationsshortname}</option>`
           ),
         ].join("")
       : "";
-    const incubateeOptions = [
-      `<option value="" ${
-        !user.usersincubateesrecid ? "selected" : ""
-      }>Select incubatee</option>`,
-      ...incubatees.map(
+
+    // --- Generate Incubatee Options ---
+    // Check if the user's incubatee exists in the fetched list
+    const existingIncubateeIds = new Set(specificIncubatees.map((i) => i.incubateesrecid));
+    let finalIncubatees = [...specificIncubatees];
+
+    // If not found, add it manually using data from the row
+    if (user.usersincubateesrecid && !existingIncubateeIds.has(String(user.usersincubateesrecid)) && !existingIncubateeIds.has(Number(user.usersincubateesrecid))) {
+      finalIncubatees.unshift({
+        incubateesrecid: user.usersincubateesrecid,
+        incubateesname: user.incubateesname || "Unknown Incubatee", // Using the name from your JSON response
+      });
+    }
+
+    const incubateeOptionsHTML = finalIncubatees
+      .map(
         (incubatee) =>
           `<option value="${incubatee.incubateesrecid}" ${
             user.usersincubateesrecid == incubatee.incubateesrecid
               ? "selected"
               : ""
-          }>${incubatee.incubateesname}</option>`,
-      ),
-    ].join("");
+          }>${incubatee.incubateesname}</option>`
+      )
+      .join("");
 
+    const incubateeOptions = [
+      `<option value="" ${
+        !user.usersincubateesrecid ? "selected" : ""
+      }>Select incubatee</option>`,
+      incubateeOptionsHTML
+    ].join("");
+    
     const result = await Swal.fire({
       title: "Edit User",
       html: `
@@ -1176,7 +1287,7 @@ export default function UserTable() {
         </div>
         <div class="swal-form-row">
           <select id="swal-role" class="swal2-select">
-            ${roleOptions}
+            ${roleOptionsHTML}
           </select>
         </div>
         ${
@@ -1232,9 +1343,10 @@ export default function UserTable() {
           usersincubationsrecid: canSelectIncubation
             ? incubation.value
             : selectedIncubation
-              ? selectedIncubation.incubationsrecid
-              : incUserid,
+            ? selectedIncubation.incubationsrecid
+            : incUserid,
           usersincubateesrecid: incubatee.value || null,
+          usersmentorid: user.usersmentorid,
         };
       },
       didOpen: () => {
@@ -1270,14 +1382,36 @@ export default function UserTable() {
               incUserId: incubationId,
             });
             if (response.data.statusCode === 200) {
-              const options = [
-                '<option value="" disabled selected>Select incubatee</option>',
-                ...(response.data.data || []).map(
+              // Ensure we preserve the currently selected incubatee if it's not in the new list
+              const currentVal = incubateeSelect.value;
+              const fetchedList = response.data.data || [];
+              
+              // Check if current value exists in new list
+              const exists = fetchedList.some(i => i.incubateesrecid == currentVal);
+              
+              let optionsHtml = fetchedList
+                .map(
                   (incubatee) =>
-                    `<option value="${incubatee.incubateesrecid}">${incubatee.incubateesname}</option>`,
-                ),
-              ].join("");
-              incubateeSelect.innerHTML = options;
+                    `<option value="${incubatee.incubateesrecid}">${incubatee.incubateesname}</option>`
+                )
+                .join("");
+              
+              // If the previously selected incubatee is missing from the new fetch (e.g. changed incubation context),
+              // we can either clear it or try to keep it. 
+              // For this context, we just render the new list.
+              
+              const currentUserIncubatee = user.usersincubateesrecid;
+
+                incubateeSelect.innerHTML = [
+                  '<option value="">Select incubatee</option>',
+                  optionsHtml
+                ].join("");
+
+                // 🔥 Restore selection AFTER rebuilding options
+                if (currentUserIncubatee) {
+                  incubateeSelect.value = currentUserIncubatee;
+                }
+              
             } else {
               incubateeSelect.innerHTML =
                 '<option value="" disabled>No incubatees found</option>';
@@ -1332,7 +1466,7 @@ export default function UserTable() {
           usersname: formData.usersname,
           usersrolesrecid: formData.usersrolesrecid,
           userspassword: formData.userspassword,
-          usersadminstate: "1", // Ensure it stays enabled on edit
+          usersadminstate: "1",
           usersmodifiedby: userId,
           usersrecid: user.usersrecid,
           usersincubationsrecid: formData.usersincubationsrecid,
@@ -1352,7 +1486,7 @@ export default function UserTable() {
           Swal.fire(
             "❌ Error",
             response.data.message || "Failed to update user",
-            "error",
+            "error"
           );
         }
       } catch (err) {
@@ -1365,7 +1499,7 @@ export default function UserTable() {
       }
     }
   };
-
+  
   return (
     <Box className="doccat-container" sx={{ p: 2 }}>
       <Box
@@ -1394,20 +1528,22 @@ export default function UserTable() {
               ),
             }}
           />
-          <Button
-            variant="contained"
-            startIcon={
-              isAdding ? (
-                <CircularProgress size={16} color="inherit" />
-              ) : (
-                <FaPlus />
-              )
-            }
-            onClick={handleAddUser}
-            disabled={isAdding}
-          >
-            {isAdding ? "Adding..." : "Add User"}
-          </Button>
+          {hasWriteAccess && (
+            <Button
+              variant="contained"
+              startIcon={
+                isAdding ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : (
+                  <FaPlus />
+                )
+              }
+              onClick={handleAddUser}
+              disabled={isAdding}
+            >
+              {isAdding ? "Adding..." : "Add User"}
+            </Button>
+          )}
           <Button
             variant="outlined"
             startIcon={<Download size={16} />}
@@ -1446,7 +1582,7 @@ export default function UserTable() {
         Showing {paginationModel.page * paginationModel.pageSize + 1} to{" "}
         {Math.min(
           (paginationModel.page + 1) * paginationModel.pageSize,
-          filteredData.length,
+          filteredData.length
         )}{" "}
         of {filteredData.length} entries
       </Box>
@@ -1513,13 +1649,15 @@ export default function UserTable() {
             <TextField
               fullWidth
               size="small"
-              placeholder={`Enter ${filterColumn === "usersname" && "name"}${
-                filterColumn === "usersemail" && "email"
-              }${filterColumn === "rolesname" && "role"}${
-                filterColumn === "userscreatedtime" && "created time"
-              }${filterColumn === "usersmodifiedtime" && "modified time"}${
-                filterColumn === "userscreatedby" && "created by"
-              }${filterColumn === "usersmodifiedby" && "modified by"}...`}
+              placeholder={`Enter ${
+                filterColumn === "usersname" && "name"
+              }${filterColumn === "usersemail" && "email"}${
+                filterColumn === "rolesname" && "role"
+              }${filterColumn === "userscreatedtime" && "created time"}${
+                filterColumn === "usersmodifiedtime" && "modified time"
+              }${filterColumn === "userscreatedby" && "created by"}${
+                filterColumn === "usersmodifiedby" && "modified by"
+              }...`}
               value={columnFilters[filterColumn] || ""}
               onChange={(e) => handleFilterChange(filterColumn, e.target.value)}
               variant="outlined"
