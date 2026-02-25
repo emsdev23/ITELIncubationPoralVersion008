@@ -81,7 +81,6 @@ const FileUploadButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-// Added onAssignSuccess to props
 const TrainingModule = forwardRef(
   ({ title = "🎓 Training Module", onAssignSuccess }, ref) => {
     const hasWriteAccess = useWriteAccess(
@@ -135,6 +134,9 @@ const TrainingModule = forwardRef(
     });
     const [error, setError] = useState(null);
 
+    // State to store existing assignments for duplicate check
+    const [allAssignments, setAllAssignments] = useState([]); 
+
     useImperativeHandle(ref, () => ({
       openAddModal,
     }));
@@ -142,31 +144,37 @@ const TrainingModule = forwardRef(
     // --- API CALLS ---
 
     const fetchTrainingList = useCallback(async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await api.post(
-          "/resources/generic/gettraininglist",
-          {
-            userId: parseInt(userId) || 1,
-            userIncId: "ALL",
-          },
-          {
-            headers: {
-              "X-Module": "Training Management",
-              "X-Action": "Fetch Training List",
-            },
-          },
-        );
-        setTrainings(response.data.data || []);
-      } catch (err) {
-        console.error("Error fetching trainings:", err);
-        setError("Failed to load training list.");
-      } finally {
-        setLoading(false);
-      }
-    }, [userId]);
+  setLoading(true);
+  setError(null);
 
+  try {
+    const response = await api.post(
+      "/resources/generic/gettraininglist",
+      {
+        userId: parseInt(userId) || 1,
+        userIncId: "ALL",
+      },
+      {
+        headers: {
+          "X-Module": "Training Management",
+          "X-Action": "Fetch Training List",
+        },
+      },
+    );
+
+    const filteredTrainings = (response.data.data || []).filter(
+      (item) => item.trainingadminstate === 1
+    );
+
+    setTrainings(filteredTrainings);
+
+  } catch (err) {
+    console.error("Error fetching trainings:", err);
+    setError("Failed to load training list.");
+  } finally {
+    setLoading(false);
+  }
+}, [userId]);
     const fetchCategories = useCallback(async () => {
       try {
         const response = await api.post(
@@ -232,11 +240,10 @@ const TrainingModule = forwardRef(
 
     const fetchUsers = useCallback(async () => {
       try {
-        // UPDATED: Using getmentorspoc endpoint
         const response = await api.post(
           "/resources/generic/getmentorspoc",
           {
-            userId: userId || "90", // Use dynamic userId or fallback to 90 as requested
+            userId: userId || "90",
             userIncId: "1",
           },
           {
@@ -246,8 +253,6 @@ const TrainingModule = forwardRef(
             },
           },
         );
-
-        // Response structure: { data: [ { mentorincassnincuserrecid: ..., usersname: ... } ] }
         const mentors = response.data.data || [];
         setUsers(mentors);
       } catch (err) {
@@ -255,6 +260,23 @@ const TrainingModule = forwardRef(
         setUsers([]);
       }
     }, [userId]);
+
+    // --- NEW: Fetch Existing Assignments for Duplicate Check ---
+    const fetchExistingAssignments = useCallback(async () => {
+      try {
+        const response = await api.post(
+          "/resources/generic/gettrainingassndetails",
+          {
+            userId: "ALL",
+            userIncId: incUserid || "1",
+          }
+        );
+        setAllAssignments(response.data.data || []);
+      } catch (err) {
+        console.error("Error fetching assignments:", err);
+        setAllAssignments([]);
+      }
+    }, [incUserid]);
 
     const refreshData = useCallback(() => {
       fetchTrainingList();
@@ -362,7 +384,9 @@ const TrainingModule = forwardRef(
         trainingassnincusersid: "",
       });
       setIsAssignModalOpen(true);
-    }, []);
+      // Fetch assignments when opening the modal to check for duplicates
+      fetchExistingAssignments();
+    }, [fetchExistingAssignments]);
 
     const handleAssignChange = useCallback((e) => {
       const { name, value } = e.target;
@@ -378,13 +402,101 @@ const TrainingModule = forwardRef(
           return;
         }
 
+        // --- DUPLICATE CHECK LOGIC ---
+        const isDuplicate = allAssignments.find(
+          (assignment) =>
+            assignment.trainingassntrainingid == selectedTrainingForAssign.trainingid &&
+            assignment.trainingassnincusersid == assignFormData.trainingassnincusersid
+        );
+
+        if (isDuplicate) {
+          // --- FIX: Close Dialog BEFORE showing Alert ---
+          setIsAssignModalOpen(false);
+
+          const result = await Swal.fire({
+            title: "Already Assigned",
+            text: "This training has already been assigned to this user. Do you want to assign it again?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d42",
+            cancelButtonText: "Cancel",
+          });
+
+          if (result.isConfirmed) {
+            // User confirmed -> Proceed to assignment
+            setIsAssigning(true);
+            try {
+              const url = `${IP}/itelinc/addTrainingAssn`;
+
+              const params = new URLSearchParams({
+                trainingassntrainingid: selectedTrainingForAssign.trainingid,
+                trainingassnincusersid: assignFormData.trainingassnincusersid,
+                trainingassnmentorusersid: parseInt(userId) || 1,
+                trainingassnadminstate: 1,
+                trainingassncreatedby: parseInt(userId) || 1,
+                trainingassnmodifiedby: parseInt(userId) || 1,
+              });
+
+              const response = await fetch(`${url}?${params.toString()}`, {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                  userid: userId || "1",
+                  "X-Module": "Training Management",
+                  "X-Action": "Assign Training",
+                },
+              });
+
+              const data = await response.json();
+
+              if (
+                response.ok ||
+                data.statusCode === 200 ||
+                data.status === "success"
+              ) {
+                // Close dialog before success message to ensure visibility
+                setIsAssignModalOpen(false);
+                
+                Swal.fire(
+                  "Assigned!",
+                  "Training module assigned successfully.",
+                  "success",
+                );
+                refreshData();
+
+                if (onAssignSuccess) {
+                  onAssignSuccess();
+                }
+              } else {
+                throw new Error(data.message || "Operation failed");
+              }
+            } catch (err) {
+              console.error("Error assigning training:", err);
+              showToast("Failed to assign training", "error");
+              Swal.fire(
+                "Error",
+                err?.message || "Failed to assign training",
+                "error",
+              );
+            } finally {
+              setIsAssigning(false);
+            }
+          } else {
+            // User cancelled -> Re-open the Modal
+            setIsAssignModalOpen(true);
+          }
+          return; // Stop execution here
+        }
+
+        // --- PROCEED WITH NORMAL ASSIGNMENT ---
         setIsAssigning(true);
         try {
           const url = `${IP}/itelinc/addTrainingAssn`;
 
           const params = new URLSearchParams({
             trainingassntrainingid: selectedTrainingForAssign.trainingid,
-            // Sends mentorincassnincuserrecid as trainingassnincusersid
             trainingassnincusersid: assignFormData.trainingassnincusersid,
             trainingassnmentorusersid: parseInt(userId) || 1,
             trainingassnadminstate: 1,
@@ -410,15 +522,16 @@ const TrainingModule = forwardRef(
             data.statusCode === 200 ||
             data.status === "success"
           ) {
+            // Close dialog BEFORE success message for cleaner UX
+            setIsAssignModalOpen(false);
+
             Swal.fire(
               "Assigned!",
               "Training module assigned successfully.",
               "success",
             );
-            setIsAssignModalOpen(false);
             refreshData();
 
-            // Trigger the parent callback to refresh the association table
             if (onAssignSuccess) {
               onAssignSuccess();
             }
@@ -446,6 +559,7 @@ const TrainingModule = forwardRef(
         refreshData,
         showToast,
         onAssignSuccess,
+        allAssignments,
       ],
     );
 
@@ -867,7 +981,7 @@ const TrainingModule = forwardRef(
               sx={{
                 position: "absolute",
                 right: 8,
-                top: 8,
+            top: 8,
                 color: (theme) => theme.palette.grey[500],
               }}
               disabled={isSaving}
@@ -1184,8 +1298,7 @@ const TrainingModule = forwardRef(
         <StyledBackdrop open={isAssigning}>
           <Box
             sx={{
-              display: "flex",
-              flexDirection: "column",
+              display: "openDialog, flexDirection: column",
               alignItems: "center",
             }}
           >
