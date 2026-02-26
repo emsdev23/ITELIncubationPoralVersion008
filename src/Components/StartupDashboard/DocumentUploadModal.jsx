@@ -14,14 +14,17 @@ const DocumentUploadModal = ({
   const [userId, setUserId] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSubCategory, setSelectedSubCategory] = useState("");
+  const [selectedPeriodicity, setSelectedPeriodicity] = useState("");
   const [selectedDocInfo, setSelectedDocInfo] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
+  const [periodicityList, setPeriodicityList] = useState([]);
   const [docInfos, setDocInfos] = useState([]);
   const [loading, setLoading] = useState({
     categories: false,
     subCategories: false,
+    periodicity: false,
     docInfos: false,
     uploading: false,
   });
@@ -33,9 +36,7 @@ const DocumentUploadModal = ({
 
   const getFileExtension = (filename) => {
     const lastDotIndex = filename.lastIndexOf(".");
-    if (lastDotIndex === -1 || lastDotIndex === 0) {
-      return "";
-    }
+    if (lastDotIndex === -1 || lastDotIndex === 0) return "";
     return filename.substring(lastDotIndex + 1).toLowerCase();
   };
 
@@ -53,6 +54,7 @@ const DocumentUploadModal = ({
     if (!isModalOpen) {
       setSelectedCategory("");
       setSelectedSubCategory("");
+      setSelectedPeriodicity("");
       setSelectedDocInfo("");
       setSelectedFile(null);
       setSelectedDate("");
@@ -63,10 +65,11 @@ const DocumentUploadModal = ({
     }
   }, [isModalOpen]);
 
-  // Fetch categories when modal opens
+  // Fetch categories & periodicity when modal opens
   useEffect(() => {
     if (isModalOpen && userId) {
       fetchCategories();
+      fetchPeriodicityList();
     }
   }, [isModalOpen, userId]);
 
@@ -78,11 +81,8 @@ const DocumentUploadModal = ({
       categories.length > 0 &&
       !initialDataLoaded
     ) {
-      console.log("Pre-filling form with:", documentData); // Debug log
-
       setIsUpdating(true);
 
-      // Find the category that matches the document's category name
       const matchingCategory = categories.find(
         (cat) => cat.text === documentData.doccatname,
       );
@@ -90,14 +90,12 @@ const DocumentUploadModal = ({
       if (matchingCategory) {
         setSelectedCategory(matchingCategory.value.toString());
 
-        // Set date if available
         if (documentData.due_date) {
           const date = new Date(documentData.due_date.replace("Z", ""));
           const formattedDate = date.toISOString().split("T")[0];
           setSelectedDate(formattedDate);
         }
       } else {
-        console.error("Category not found:", documentData.doccatname);
         setError(`Category "${documentData.doccatname}" not found`);
       }
 
@@ -115,49 +113,63 @@ const DocumentUploadModal = ({
   // Pre-fill subcategory after subcategories are loaded
   useEffect(() => {
     if (
-      documentData &&
-      documentData.docsubcatname &&
+      documentData?.docsubcatname &&
       subCategories.length > 0 &&
       initialDataLoaded
     ) {
-      // Find the subcategory that matches the document's subcategory name
       const matchingSubCategory = subCategories.find(
         (subCat) => subCat.text === documentData.docsubcatname,
       );
-
       if (matchingSubCategory) {
         setSelectedSubCategory(matchingSubCategory.value.toString());
       } else {
-        console.error("Subcategory not found:", documentData.docsubcatname);
         setError(`Subcategory "${documentData.docsubcatname}" not found`);
       }
     }
   }, [documentData, subCategories, initialDataLoaded]);
 
-  // When subcategory is set, fetch doc info
+  // Pre-fill periodicity after periodicityList is loaded
   useEffect(() => {
-    if (selectedSubCategory && userId) {
-      fetchDocInfo();
+    if (
+      documentData?.periodicity &&
+      periodicityList.length > 0 &&
+      initialDataLoaded
+    ) {
+      const matchingPeriodicity = periodicityList.find(
+        (p) =>
+          p.value === documentData.periodicity ||
+          p.text === documentData.periodicity,
+      );
+      if (matchingPeriodicity) {
+        setSelectedPeriodicity(matchingPeriodicity.value.toString());
+      }
     }
-  }, [selectedSubCategory, userId]);
+  }, [documentData, periodicityList, initialDataLoaded]);
+
+  // When subcategory OR periodicity changes, reset and re-fetch doc info (only if both are selected)
+  useEffect(() => {
+    if (selectedSubCategory && selectedPeriodicity && userId) {
+      fetchDocInfo();
+    } else {
+      // Reset doc info if either is cleared
+      setDocInfos([]);
+      setSelectedDocInfo("");
+    }
+  }, [selectedSubCategory, selectedPeriodicity, userId]);
 
   // Pre-fill document info after docInfos are loaded
   useEffect(() => {
     if (
-      documentData &&
-      documentData.documentname &&
+      documentData?.documentname &&
       docInfos.length > 0 &&
       initialDataLoaded
     ) {
-      // Find the document info that matches the document's name
       const matchingDocInfo = docInfos.find(
         (docInfo) => docInfo.text === documentData.documentname,
       );
-
       if (matchingDocInfo) {
         setSelectedDocInfo(matchingDocInfo.value.toString());
       } else {
-        console.error("Document info not found:", documentData.documentname);
         setError(`Document "${documentData.documentname}" not found`);
       }
     }
@@ -170,7 +182,6 @@ const DocumentUploadModal = ({
       const token = sessionStorage.getItem("token");
       const response = await api.post(
         "/resources/generic/getdoccat",
-
         {
           userId: userId,
           roleId: 0,
@@ -185,15 +196,9 @@ const DocumentUploadModal = ({
           },
         },
       );
-
-      // if (!response.ok) {
-      //   throw new Error(`HTTP error! status: ${response.status}`);
-      // }
-
       const data = response.data;
       if (data.statusCode === 200) {
         setCategories(data.data);
-        console.log("Categories loaded:", data.data); // Debug log
       } else {
         setError(
           "Failed to fetch categories: " + (data.message || "Unknown error"),
@@ -201,7 +206,6 @@ const DocumentUploadModal = ({
       }
     } catch (err) {
       setError("Error fetching categories: " + err.message);
-      console.error("Categories fetch error:", err);
     } finally {
       setLoading((prev) => ({ ...prev, categories: false }));
     }
@@ -215,6 +219,7 @@ const DocumentUploadModal = ({
     setSubCategories([]);
     setDocInfos([]);
     setSelectedDocInfo("");
+    setSelectedSubCategory("");
 
     try {
       const token = sessionStorage.getItem("token");
@@ -233,16 +238,9 @@ const DocumentUploadModal = ({
           },
         },
       );
-
-      // if (!response.ok) {
-      //   throw new Error(`HTTP error! status: ${response.status}`);
-      // }
-
       const data = response.data;
-      // const data = await response.json();
       if (data.statusCode === 200) {
         setSubCategories(data.data);
-        console.log("Subcategories loaded:", data.data); // Debug log
       } else {
         setError(
           "Failed to fetch subcategories: " + (data.message || "Unknown error"),
@@ -250,14 +248,49 @@ const DocumentUploadModal = ({
       }
     } catch (err) {
       setError("Error fetching subcategories: " + err.message);
-      console.error("Subcategories fetch error:", err);
     } finally {
       setLoading((prev) => ({ ...prev, subCategories: false }));
     }
   };
 
+  const fetchPeriodicityList = async () => {
+    setLoading((prev) => ({ ...prev, periodicity: true }));
+    setError("");
+    try {
+      const token = sessionStorage.getItem("token");
+      const response = await api.post(
+        "/resources/generic/getperiodicitylist",
+        {
+          userId: userId,
+          userIncId: incuserid || 1,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            userid: userId || "1",
+            "X-Module": "Document Module",
+            "X-Action": "Fetching Periodicity List",
+          },
+        },
+      );
+      const data = response.data;
+      if (data.statusCode === 200) {
+        setPeriodicityList(data.data);
+      } else {
+        setError(
+          "Failed to fetch periodicity list: " +
+            (data.message || "Unknown error"),
+        );
+      }
+    } catch (err) {
+      setError("Error fetching periodicity list: " + err.message);
+    } finally {
+      setLoading((prev) => ({ ...prev, periodicity: false }));
+    }
+  };
+
   const fetchDocInfo = async () => {
-    if (!selectedSubCategory || !userId) return;
+    if (!selectedSubCategory || !selectedPeriodicity || !userId) return;
 
     setLoading((prev) => ({ ...prev, docInfos: true }));
     setError("");
@@ -273,6 +306,7 @@ const DocumentUploadModal = ({
           userIncId: incuserid || 1,
           doccatid: parseInt(selectedCategory),
           docsubcatid: parseInt(selectedSubCategory),
+          periodicity: parseInt(selectedPeriodicity),
         },
         {
           headers: {
@@ -282,15 +316,9 @@ const DocumentUploadModal = ({
           },
         },
       );
-
-      // if (!response.ok) {
-      //   throw new Error(`HTTP error! status: ${response.status}`);
-      // }
-
       const data = response.data;
       if (data.statusCode === 200) {
         setDocInfos(data.data);
-        console.log("Doc infos loaded:", data.data); // Debug log
       } else {
         setError(
           "Failed to fetch document info: " + (data.message || "Unknown error"),
@@ -298,7 +326,6 @@ const DocumentUploadModal = ({
       }
     } catch (err) {
       setError("Error fetching document info: " + err.message);
-      console.error("Document info fetch error:", err);
     } finally {
       setLoading((prev) => ({ ...prev, docInfos: false }));
     }
@@ -311,7 +338,6 @@ const DocumentUploadModal = ({
         setError("File size must be less than 10MB");
         return;
       }
-
       const validExtensions = [
         "pdf",
         "png",
@@ -322,16 +348,12 @@ const DocumentUploadModal = ({
         "xlsx",
       ];
       const fileExtension = getFileExtension(file.name);
-
       if (!validExtensions.includes(fileExtension)) {
         setError(
-          `File type not supported. Allowed types: ${validExtensions.join(
-            ", ",
-          )}`,
+          `File type not supported. Allowed types: ${validExtensions.join(", ")}`,
         );
         return;
       }
-
       setSelectedFile(file);
       setError("");
     }
@@ -342,6 +364,7 @@ const DocumentUploadModal = ({
       !selectedFile ||
       !selectedCategory ||
       !selectedSubCategory ||
+      !selectedPeriodicity ||
       !selectedDocInfo
     ) {
       setError("Please fill all fields and select a file");
@@ -366,12 +389,11 @@ const DocumentUploadModal = ({
         incubaterecid: incubateesrecid,
         doccatid: parseInt(selectedCategory),
         docsubcatid: parseInt(selectedSubCategory),
+        periodicity: parseInt(selectedPeriodicity),
         docid: parseInt(selectedDocInfo),
         docfordate: docfordate,
         filetype: fileExtension,
       };
-
-      console.log("Upload data:", uploadData);
 
       const token = sessionStorage.getItem("token");
       const response = await api.post(
@@ -387,57 +409,38 @@ const DocumentUploadModal = ({
       );
 
       const data = response.data;
-      console.log(data);
 
       if (data.statusCode === 200) {
         setSuccess(data.message || "Document uploaded successfully!");
-
-        if (onUploadSuccess) {
-          await onUploadSuccess();
-        }
-
-        setTimeout(() => {
-          handleClose();
-        }, 1500);
+        if (onUploadSuccess) await onUploadSuccess();
+        setTimeout(() => handleClose(), 1500);
       } else {
-        // This is a safety net and unlikely to be hit.
         throw new Error(
           data.message || "An unknown error occurred during upload.",
         );
       }
     } catch (err) {
-      console.error("Upload error:", err);
-
-      // --- SIMPLIFIED ERROR HANDLING ---
       let errorMessage = "An unexpected error occurred. Please try again.";
-
-      // If the error is from our API, use the specific message it provides.
-      if (err.response && err.response.data && err.response.data.message) {
+      if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err.request) {
-        // If the request was made but no response was received (network error)
         errorMessage = "Network error: Could not connect to the server.";
       }
-
-      // Set the error to just the message string.
       setError(errorMessage);
     } finally {
       setLoading((prev) => ({ ...prev, uploading: false }));
     }
   };
 
-  const convertToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
+  const convertToBase64 = (file) =>
+    new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => resolve(reader.result.split(",")[1]);
       reader.onerror = (error) => reject(error);
     });
-  };
 
-  const handleClose = () => {
-    setIsModalOpen(false);
-  };
+  const handleClose = () => setIsModalOpen(false);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -452,14 +455,12 @@ const DocumentUploadModal = ({
   const handleDrop = (e) => {
     e.preventDefault();
     e.currentTarget.classList.remove("dragOver");
-
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       if (file.size > 10 * 1024 * 1024) {
         setError("File size must be less than 10MB");
         return;
       }
-
       const validExtensions = [
         "pdf",
         "png",
@@ -470,16 +471,12 @@ const DocumentUploadModal = ({
         "xlsx",
       ];
       const fileExtension = getFileExtension(file.name);
-
       if (!validExtensions.includes(fileExtension)) {
         setError(
-          `File type not supported. Allowed types: ${validExtensions.join(
-            ", ",
-          )}`,
+          `File type not supported. Allowed types: ${validExtensions.join(", ")}`,
         );
         return;
       }
-
       setSelectedFile(file);
       setError("");
     }
@@ -496,10 +493,23 @@ const DocumentUploadModal = ({
             ×
           </button>
         </div>
-
-        {/* {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">{success}</div>} */}
-
+        {/* ✅ Add this right here */}
+        {isUpdating && (
+          <div
+            style={{
+              background: "#fff3cd",
+              border: "1px solid #ffc107",
+              borderRadius: "6px",
+              padding: "8px 12px",
+              marginBottom: "16px",
+              fontSize: "0.85rem",
+              color: "#856404",
+            }}
+          >
+            ℹ️ Document type fields are locked in update mode. Only the date and
+            file can be changed.
+          </div>
+        )}
         {/* Document Category */}
         <div className="form-section">
           <label className="form-label">Select Category</label>
@@ -507,7 +517,7 @@ const DocumentUploadModal = ({
             className="form-dropdown"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            disabled={loading.categories}
+            disabled={loading.categories || isUpdating}
           >
             <option value="">-- Choose Category --</option>
             {categories.map((cat) => (
@@ -529,7 +539,11 @@ const DocumentUploadModal = ({
               className="form-dropdown"
               value={selectedSubCategory}
               onChange={(e) => setSelectedSubCategory(e.target.value)}
-              disabled={loading.subCategories || subCategories.length === 0}
+              disabled={
+                loading.subCategories ||
+                subCategories.length === 0 ||
+                isUpdating
+              }
             >
               <option value="">-- Choose Sub-Category --</option>
               {subCategories.map((subCat) => (
@@ -544,15 +558,42 @@ const DocumentUploadModal = ({
           </div>
         )}
 
-        {/* Document Info */}
+        {/* ✅ Periodicity - shown after subcategory is selected */}
         {selectedSubCategory && (
+          <div className="form-section">
+            <label className="form-label">Select Periodicity</label>
+            <select
+              className="form-dropdown"
+              value={selectedPeriodicity}
+              onChange={(e) => setSelectedPeriodicity(e.target.value)}
+              disabled={
+                loading.periodicity ||
+                periodicityList.length === 0 ||
+                isUpdating
+              }
+            >
+              <option value="">-- Choose Periodicity --</option>
+              {periodicityList.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.text}
+                </option>
+              ))}
+            </select>
+            {loading.periodicity && (
+              <div className="loading-text">Loading periodicity...</div>
+            )}
+          </div>
+        )}
+
+        {/* Document Info - requires both subcategory AND periodicity */}
+        {selectedSubCategory && selectedPeriodicity && (
           <div className="form-section">
             <label className="form-label">Select Document Type</label>
             <select
               className="form-dropdown"
               value={selectedDocInfo}
               onChange={(e) => setSelectedDocInfo(e.target.value)}
-              disabled={loading.docInfos || docInfos.length === 0}
+              disabled={loading.docInfos || docInfos.length === 0 || isUpdating}
             >
               <option value="">-- Choose Document Type --</option>
               {docInfos.map((docInfo) => (
@@ -566,7 +607,7 @@ const DocumentUploadModal = ({
             )}
             {docInfos.length === 0 && !loading.docInfos && (
               <div className="info-message">
-                No document types available for this subcategory
+                No document types available for this selection
               </div>
             )}
           </div>
@@ -612,8 +653,8 @@ const DocumentUploadModal = ({
                 <div className="file-placeholder">
                   <p>Drag & drop file here or click to select</p>
                   <p className="file-hint">
-                    Max file size: 10MB. Supported formats: "pdf", "png", "jpg",
-                    "jpeg", "docx", "xls", "xlsx",
+                    Max file size: 10MB. Supported formats: pdf, png, jpg, jpeg,
+                    docx, xls, xlsx
                   </p>
                 </div>
               )}
@@ -672,7 +713,6 @@ const DocumentUploadModal = ({
           padding: 20px;
           box-sizing: border-box;
         }
-
         .modal-content {
           background: white;
           padding: 24px;
@@ -683,7 +723,6 @@ const DocumentUploadModal = ({
           max-height: 90vh;
           overflow-y: auto;
         }
-
         .modal-header {
           display: flex;
           justify-content: space-between;
@@ -692,13 +731,11 @@ const DocumentUploadModal = ({
           padding-bottom: 15px;
           border-bottom: 1px solid #eaeaea;
         }
-
         .modal-header h3 {
           margin: 0;
           font-size: 1.5rem;
           color: #333;
         }
-
         .close-button {
           background: none;
           border: none;
@@ -712,22 +749,18 @@ const DocumentUploadModal = ({
           align-items: center;
           justify-content: center;
         }
-
         .close-button:hover {
           color: #333;
         }
-
         .form-section {
           margin-bottom: 20px;
         }
-
         .form-label {
           display: block;
           font-weight: 600;
           margin-bottom: 8px;
           color: #444;
         }
-
         .form-dropdown {
           width: 100%;
           padding: 12px;
@@ -737,25 +770,21 @@ const DocumentUploadModal = ({
           background-color: white;
           transition: border-color 0.2s;
         }
-
         .form-dropdown:focus {
           outline: none;
           border-color: #4a90e2;
           box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
         }
-
         .form-dropdown:disabled {
           background-color: #f5f5f5;
           color: #999;
         }
-
         .date-preview {
           font-size: 0.85rem;
           color: #666;
           margin-top: 5px;
           font-style: italic;
         }
-
         .file-drop-area {
           border: 2px dashed #ccc;
           border-radius: 8px;
@@ -764,32 +793,26 @@ const DocumentUploadModal = ({
           cursor: pointer;
           transition: all 0.3s;
         }
-
         .file-drop-area:hover,
         .file-drop-area.dragOver {
           border-color: #4a90e2;
           background-color: #f8fbff;
         }
-
         .file-selected {
           color: #28a745;
         }
-
         .file-placeholder {
           color: #666;
         }
-
         .file-size,
         .file-hint {
           font-size: 0.85rem;
           margin-top: 5px;
           color: #888;
         }
-
         .file-input {
           display: none;
         }
-
         .modal-buttons {
           display: flex;
           justify-content: flex-end;
@@ -798,7 +821,6 @@ const DocumentUploadModal = ({
           padding-top: 15px;
           border-top: 1px solid #eaeaea;
         }
-
         .btn-primary {
           background-color: #4a90e2;
           color: white;
@@ -810,16 +832,13 @@ const DocumentUploadModal = ({
           transition: background-color 0.2s;
           min-width: 100px;
         }
-
         .btn-primary:hover:not(:disabled) {
           background-color: #3a80d2;
         }
-
         .btn-primary:disabled {
           background-color: #b3d0f7;
           cursor: not-allowed;
         }
-
         .btn-outline {
           background-color: transparent;
           color: #666;
@@ -830,17 +849,14 @@ const DocumentUploadModal = ({
           font-weight: 600;
           transition: all 0.2s;
         }
-
         .btn-outline:hover:not(:disabled) {
           background-color: #f9f9f9;
           border-color: #bbb;
         }
-
         .btn-outline:disabled {
           color: #ccc;
           cursor: not-allowed;
         }
-
         .error-message {
           color: #d9534f;
           margin-bottom: 15px;
@@ -849,7 +865,6 @@ const DocumentUploadModal = ({
           border-radius: 6px;
           border-left: 4px solid #d9534f;
         }
-
         .success-message {
           color: #28a745;
           margin-bottom: 15px;
@@ -858,13 +873,11 @@ const DocumentUploadModal = ({
           border-radius: 6px;
           border-left: 4px solid #28a745;
         }
-
         .loading-text {
           color: #666;
           font-size: 0.9rem;
           margin-top: 5px;
         }
-
         .info-message {
           color: #856404;
           margin-top: 8px;

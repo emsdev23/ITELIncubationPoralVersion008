@@ -528,31 +528,18 @@ export default function MentorTypeTable() {
         sortable: true,
       },
       {
-        field: "mentortypeadminstate",
+        field: "mentortypeactivestate",
         headerName: "Status",
-        width: 120,
+        width: 300,
         sortable: true,
         renderCell: (params) => {
-          if (!params?.row) return "-";
-          const status = params.row.mentortypeadminstate;
-          const isActive = status === 1 || status === undefined;
+          const value = params.value; // "Active" or "Inactive"
+          const color = value === "Active" ? "green" : "red";
 
           return (
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              <IconButton
-                size="small"
-                sx={{
-                  mr: 0.5,
-                  color: isActive ? "success.main" : "error.main",
-                  cursor: "default",
-                }}
-              >
-                {isActive ? <CheckCircleIcon fontSize="small" /> : <CancelIcon fontSize="small" />}
-              </IconButton>
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                {isActive ? "Active" : "Inactive"}
-              </Typography>
-            </Box>
+            <span style={{ fontWeight: 600, color }}>
+              {value}
+            </span>
           );
         },
       },
@@ -603,7 +590,7 @@ export default function MentorTypeTable() {
                 return (
                   <Box>
                     {/* Toggle Status Button */}
-                    <ActionButton
+                    {/* <ActionButton
                       color={isCurrentlyEnabled ? "on" : "off"}
                       onClick={() => handleToggleStatus(params.row)}
                       disabled={
@@ -620,7 +607,7 @@ export default function MentorTypeTable() {
                       ) : (
                         <ToggleOffIcon fontSize="small" />
                       )}
-                    </ActionButton>
+                    </ActionButton> */}
 
                     {/* Edit Button */}
                     <ActionButton

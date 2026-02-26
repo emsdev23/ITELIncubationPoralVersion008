@@ -865,6 +865,8 @@ const StartupDashboard = () => {
     }
   };
 
+  // Replace the entire handleAddDocument function:
+
   const handleAddDocument = async (document) => {
     setIsLoadingDocData(true);
 
@@ -874,10 +876,8 @@ const StartupDashboard = () => {
       const matchingCategory = categories.find(
         (cat) => cat.text === document.doccatname,
       );
-
-      if (!matchingCategory) {
+      if (!matchingCategory)
         throw new Error(`Category "${document.doccatname}" not found`);
-      }
 
       const subcategories = await fetchDocumentSubcategories(
         matchingCategory.value,
@@ -886,32 +886,53 @@ const StartupDashboard = () => {
       const matchingSubcategory = subcategories.find(
         (subcat) => subcat.text === document.docsubcatname,
       );
-
-      if (!matchingSubcategory) {
+      if (!matchingSubcategory)
         throw new Error(`Subcategory "${document.docsubcatname}" not found`);
-      }
 
+      // ✅ Step: resolve periodicity text (e.g. "Once") → numeric id (e.g. 1)
+      const periodicityResponse = await api.post(
+        "/resources/generic/getperiodicitylist",
+        { userId: userid, userIncId: incuserid || 1 },
+        {
+          headers: {
+            "X-Module": "Document Module",
+            "X-Action": "Fetching Periodicity List",
+          },
+        },
+      );
+
+      let matchingPeriodicity = null;
+      if (periodicityResponse.data.statusCode === 200) {
+        matchingPeriodicity = periodicityResponse.data.data.find(
+          (p) => p.text === document.periodicity, // "Once" matches { value: 1, text: "Once" }
+        );
+      }
+      if (!matchingPeriodicity)
+        throw new Error(`Periodicity "${document.periodicity}" not found`);
+
+      // ✅ Now pass the numeric value to fetchDocumentInfo
       const docInfo = await fetchDocumentInfo(
         matchingCategory.value,
         matchingSubcategory.value,
+        matchingPeriodicity.value, // ← e.g. 1
       );
 
       const matchingDocInfo = docInfo.find(
         (info) => info.text === document.documentname,
       );
-
-      if (!matchingDocInfo) {
+      if (!matchingDocInfo)
         throw new Error(`Document info "${document.documentname}" not found`);
-      }
 
       setSelectedDocument({
         ...document,
         doccatid: matchingCategory.value,
         docsubcatid: matchingSubcategory.value,
+        periodicity: document.periodicity, // text label — used for pre-fill matching in modal
+        periodicityid: matchingPeriodicity.value, // ✅ numeric id — used to pre-select dropdown
         docinfoid: matchingDocInfo.value,
-        categories: categories,
-        subcategories: subcategories,
-        docInfo: docInfo,
+        categories,
+        subcategories,
+        docInfo,
       });
 
       setIsModalOpen(true);
@@ -1644,7 +1665,7 @@ const StartupDashboard = () => {
   };
 
   // Function to fetch document info
-  const fetchDocumentInfo = async (docCatId, docSubCatId) => {
+  const fetchDocumentInfo = async (docCatId, docSubCatId, periodicity) => {
     try {
       const userId = sessionStorage.getItem("userid");
       const incUserId = sessionStorage.getItem("incuserid");
@@ -1655,6 +1676,7 @@ const StartupDashboard = () => {
           userid: userId,
           doccatid: docCatId,
           docsubcatid: docSubCatId,
+          periodicity: periodicity,
         },
         {
           headers: {

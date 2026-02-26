@@ -376,19 +376,9 @@ export default function TrainingCatTable() {
           },
         )
         .then((response) => {
+          console.log("API response for save:", response);
+          console.log("Decrypted response data:", response.data.statusCode, response.data.message);
           if (response.data.statusCode === 200) {
-            if (
-              response.data.data &&
-              typeof response.data.data === "string" &&
-              response.data.data.includes("Duplicate entry")
-            ) {
-              setError("Training category name already exists");
-              Swal.fire(
-                "Duplicate",
-                "Training category name already exists!",
-                "warning",
-              ).then(() => setIsModalOpen(true));
-            } else {
               setEditCat(null);
               setFormData({
                 trainingcatname: "",
@@ -402,23 +392,35 @@ export default function TrainingCatTable() {
                   "Training category saved successfully!",
                 "success",
               );
-            }
           } else {
             throw new Error(
               response.data.message ||
-                `Operation failed with status: ${response.data.statusCode}`,
+                `Operation failed with status: ${response.data.message}`,
             );
           }
         })
         .catch((err) => {
-          console.error("Error saving training category:", err);
-          setError(`Failed to save: ${err.message}`);
-          Swal.fire(
-            "Error",
-            `Failed to save training category: ${err.message}`,
-            "error",
-          ).then(() => setIsModalOpen(true));
-        })
+            console.error("Error saving training category:", err);
+
+            if (err.response && err.response.status === 409) {
+              Swal.fire(
+                "Duplicate Entry",
+                err.response.data.message || 
+                "Training category already exists!",
+                "warning"
+              );
+
+              return; // stop further execution
+            }
+
+            // Other errors
+            Swal.fire(
+              "Error",
+              err.response?.data?.message || 
+              "Failed to save training category!",
+              "error"
+            ).then(() => setIsModalOpen(true));
+          })
         .finally(() => setIsSaving(false));
     },
     [formData, editCat, userId, fetchCategories],

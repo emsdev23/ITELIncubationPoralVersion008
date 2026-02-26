@@ -584,25 +584,25 @@ export default function TrainingAssociationTable() {
         },
       },
       {
-        field: "trainingassnstatus",
+        field: "trainingassnstatusstr",
         headerName: "Training Status",
-        width: 150,
+        width: 250,
         sortable: true,
         renderCell: (params) => {
-          const statusMap = {
-            1: { label: "Assigned", color: "gray" },
-            2: { label: "In Progress", color: "orange" },
-            3: { label: "Completed", color: "green" },
-          };
+          const value = params.value; // text label
+          let color = "black";
 
-          const status = statusMap[params.value] || {
-            label: "Unknown",
-            color: "red",
-          };
+          if (value === "Completed") {
+            color = "green";
+          } else if (value === "In Progress") {
+            color = "orange";
+          } else if (value === "Assigned") {
+            color = "blue";
+          }
 
           return (
-            <span style={{ fontWeight: 600, color: status.color }}>
-              {status.label}
+            <span style={{ fontWeight: 600, color }}>
+              {value}
             </span>
           );
         },
@@ -649,9 +649,10 @@ export default function TrainingAssociationTable() {
           const isTrainee =
             String(userId) === String(row.trainingassnincusersid);
           const isNotCompleted = row.trainingassnstatus !== 3;
+          const isNotInProgress = row.trainingassnstatus !== 1;
           const isLoading = statusLoading[row.trainingassnrecid];
 
-          if (isTrainee && isNotCompleted) {
+          if (isTrainee && isNotCompleted && isNotInProgress) {
             return (
               <Button
                 variant="contained"

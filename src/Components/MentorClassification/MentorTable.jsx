@@ -144,7 +144,15 @@ export default function MentorTable() {
         incUserId: incUserid || "1",
       };
 
-      const response = await api.post("/resources/generic/getmentordetails", payload);
+      const response = await api.post("/resources/generic/getmentordetails", 
+        payload,
+      {
+            headers: {
+              "X-Module": "Mentor Management",
+              "X-Action": "Get Mentor Details",
+            },
+          }
+        );
 
       if (response.data.statusCode === 200) {
         setMentors(Array.isArray(response.data.data) ? response.data.data : []);
@@ -169,9 +177,15 @@ export default function MentorTable() {
       };
 
       const typeRes = await api.post(
-        "/resources/generic/getmentortypedetails",
-        typePayload
-      );
+          "/resources/generic/getmentortypedetails",
+          typePayload,
+          {
+            headers: {
+              "X-Module": "Mentor Management",
+              "X-Action": "Get Mentor Type Details",
+            },
+          }
+        );
 
       if (typeRes.data.statusCode === 200) {
         const filteredTypes = (Array.isArray(typeRes.data.data)
@@ -190,7 +204,13 @@ export default function MentorTable() {
 
       const classRes = await api.post(
         "/resources/generic/getmentorclassificationdetails",
-        classPayload
+        classPayload,
+        {
+            headers: {
+              "X-Module": "Mentor Management",
+              "X-Action": "Get Mentor Classification Details",
+            },
+          }
       );
 
       if (classRes.data.statusCode === 200) {
@@ -495,8 +515,9 @@ export default function MentorTable() {
       setStep(0);
       setFormData({
         incubatorId: item.mentordetsincubatorid,
-        typeId: item.mentordetsmnttypeid,
-        classSetId: item.mentordetsclasssetid,
+        // FIX: Convert to String to match the dropdown value types
+        typeId: item.mentordetsmnttypeid?.toString() || "", 
+        classSetId: item.mentordetsclasssetid?.toString() || "",
         name: item.mentordetsname || "",
         gender: item.mentordetsgender || "",
         designation: item.mentordetsdesign || "",
@@ -512,7 +533,7 @@ export default function MentorTable() {
         timeCommitment: item.mentordetstimecommitment || null,
         prevStupMentor: item.mentordetsprevstupmentor || "Yes",
         comment: item.mentordetscomment || "",
-        mentordetsadminstate: item.mentordetsadminstate, // Preserve state in form
+        mentordetsadminstate: item.mentordetsadminstate,
         createdBy: item.mentordetscreatedby,
       });
       setOpenDialog(true);
@@ -639,6 +660,18 @@ export default function MentorTable() {
         sortable: true,
       },
       {
+        field: "mentorclasssetname",
+        headerName: "Mentor Classification",
+        width: 250,
+        sortable: true,
+      },
+      {
+        field: "mentortypename",
+        headerName: "Mentor Type",
+        width: 250,
+        sortable: true,
+      },
+      {
         field: "mentordetsemail",
         headerName: "Email",
         width: 220,
@@ -651,31 +684,48 @@ export default function MentorTable() {
         sortable: true,
       },
       {
-        field: "mentordetsadminstate",
+        field: "mentordetspastexp",
+        headerName: "Past Experience",
+        width: 150,
+        sortable: true,
+      },
+      {
+        field: "mentordetslinkedin",
+        headerName: "LinkedIn Profile",
+        width: 150,
+        sortable: true,
+      },
+      {
+        field: "mentordetswebsite",
+        headerName: "Website",
+        width: 150,
+        sortable: true,
+      },
+      {
+        field: "mentordetsblog",
+        headerName: "Blog",
+        width: 150,
+        sortable: true,
+      },
+      {
+        field: "mentordetstimecommitment",
+        headerName: "Time Commitment",
+        width: 150,
+        sortable: true,
+      },
+      {
+        field: "mentordetsactivestate",
         headerName: "Status",
-        width: 120,
+        width: 150,
         sortable: true,
         renderCell: (params) => {
-          if (!params?.row) return "-";
-          const status = params.row.mentordetsadminstate;
-          const isActive = status === 1 || status === undefined;
+          const value = params.value; // "Active" or "Inactive"
+          const color = value === "Active" ? "green" : "red";
 
           return (
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              <IconButton
-                size="small"
-                sx={{
-                  mr: 0.5,
-                  color: isActive ? "success.main" : "error.main",
-                  cursor: "default",
-                }}
-              >
-                {isActive ? <CheckCircleIcon fontSize="small" /> : <CancelIcon fontSize="small" />}
-              </IconButton>
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                {isActive ? "Active" : "Inactive"}
-              </Typography>
-            </Box>
+            <span style={{ fontWeight: 600, color }}>
+              {value}
+            </span>
           );
         },
       },
@@ -887,16 +937,25 @@ export default function MentorTable() {
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <TextField
-                  name="name"
-                  label="Full Name *"
-                  type="text"
-                  fullWidth
-                  variant="outlined"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                />
-              </Grid>
+              <TextField
+                name="name"
+                label="Full Name *"
+                type="text"
+                fullWidth
+                variant="outlined"
+                value={formData.name}
+                onChange={(e) => {
+                  // Allow only alphabets, space and dot
+                  const filteredValue = e.target.value.replace(/[^a-zA-Z. ]/g, "");
+
+                  setFormData((prev) => ({
+                    ...prev,
+                    name: filteredValue,
+                  }));
+                }}
+                inputProps={{ maxLength: 50 }}
+              />
+            </Grid>
 
               <Grid item xs={12} sm={6}>
                 <FormControl sx={{width:"150px"}}>
@@ -927,27 +986,51 @@ export default function MentorTable() {
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <TextField
-                  name="email"
-                  label="Email Address *"
-                  type="email"
-                  fullWidth
-                  variant="outlined"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
-              </Grid>
+              <TextField
+                name="email"
+                label="Email Address *"
+                type="text"
+                fullWidth
+                variant="outlined"
+                value={formData.email}
+                onChange={(e) => {
+                  // Allow only alphabets, numbers, @ and .
+                  const filteredValue = e.target.value.replace(/[^a-zA-Z0-9@.]/g, "");
+
+                  setFormData((prev) => ({
+                    ...prev,
+                    email: filteredValue,
+                  }));
+                }}
+                inputProps={{ maxLength: 50 }}
+              />
+            </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField
-                  name="phone"
-                  label="Phone Number"
-                  type="text"
-                  fullWidth
-                  variant="outlined"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                />
-              </Grid>
+              <TextField
+                name="phone"
+                label="Phone Number"
+                type="text"
+                fullWidth
+                variant="outlined"
+                value={formData.phone}
+                onChange={(e) => {
+                  const numericValue = e.target.value.replace(/\D/g, "");
+                  setFormData((prev) => ({
+                    ...prev,
+                    phone: numericValue,
+                  }));
+                }}
+                onKeyPress={(e) => {
+                  if (!/[0-9]/.test(e.key)) {
+                    e.preventDefault();
+                  }
+                }}
+                inputProps={{
+                  maxLength: 10,
+                  inputMode: "numeric",
+                }}
+              />
+            </Grid>
 
               <Grid item xs={12}>
                 <TextField

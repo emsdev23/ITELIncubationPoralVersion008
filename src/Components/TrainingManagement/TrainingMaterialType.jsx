@@ -7,8 +7,6 @@ import React, {
   useCallback,
 } from "react";
 import Swal from "sweetalert2";
-import { IPAdress } from "../Datafetching/IPAdrees";
-import { FaTimes } from "react-icons/fa";
 
 // Material UI imports
 import {
@@ -26,18 +24,15 @@ import {
   Snackbar,
   Alert,
   Grid,
-  Tooltip,
+  GlobalStyles, // 1. Import GlobalStyles
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import CloseIcon from "@mui/icons-material/Close";
-import ToggleOnIcon from "@mui/icons-material/ToggleOn"; // ON Icon
-import ToggleOffIcon from "@mui/icons-material/ToggleOff"; // OFF Icon
-import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // Status Active
-import CancelIcon from "@mui/icons-material/Cancel"; // Status Inactive
+import ToggleOnIcon from "@mui/icons-material/ToggleOn";
+import ToggleOffIcon from "@mui/icons-material/ToggleOff";
 
-// Import your reusable component
+// Import your reusable component and API instance
 import ReusableDataGrid from "../Datafetching/ReusableDataGrid";
 import api from "../Datafetching/api";
 import { useWriteAccess } from "../Datafetching/useWriteAccess";
@@ -53,11 +48,11 @@ const ActionButton = styled(IconButton)(({ theme, color }) => ({
   backgroundColor:
     color === "edit"
       ? theme.palette.primary.main
-      : color === "on" // ON State -> Green
+      : color === "on"
       ? theme.palette.success.main
-      : color === "off" // OFF State -> Grey
+      : color === "off"
       ? theme.palette.grey[500]
-      : color === "delete" // Delete -> Red
+      : color === "delete"
       ? theme.palette.error.main
       : theme.palette.error.main,
   color: "white",
@@ -79,9 +74,7 @@ const ActionButton = styled(IconButton)(({ theme, color }) => ({
 const TrainingMaterialType = forwardRef(
   ({ title = "📚 Training Material Types" }, ref) => {
     const userId = sessionStorage.getItem("userid");
-    const token = sessionStorage.getItem("token");
     const roleid = sessionStorage.getItem("roleid");
-    const IP = IPAdress;
 
     const hasWriteAccess = useWriteAccess(
       "/Incubation/Dashboard/TrainingManagementPage"
@@ -100,7 +93,7 @@ const TrainingMaterialType = forwardRef(
     const [fieldErrors, setFieldErrors] = useState({});
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState({});
-    const [isToggling, setIsToggling] = useState({}); // State for Toggle Status
+    const [isToggling, setIsToggling] = useState({});
 
     const [toast, setToast] = useState({
       open: false,
@@ -134,7 +127,12 @@ const TrainingMaterialType = forwardRef(
         setMaterialTypes(response.data.data || []);
       } catch (err) {
         console.error("Error fetching material types:", err);
-        Swal.fire("Error", "Failed to load material types.", "error");
+        Swal.fire({
+          title: "Error",
+          text: "Failed to load material types.",
+          icon: "error",
+          zIndex: 9999,
+        });
       } finally {
         setLoading(false);
       }
@@ -189,7 +187,92 @@ const TrainingMaterialType = forwardRef(
       setIsModalOpen(true);
     }, []);
 
-    // --- Handle Toggle Status (Enable/Disable) ---
+    // --- Create Material Type ---
+    const createMaterialType = useCallback(async () => {
+      const endpoint = "/addTrainingMatType";
+      const action = "Add Material Type";
+
+      const payload = {
+        trainingmattype: formData.trainingmattype,
+        trainingmattypeadminstate: 1,
+        trainingmattypecreatedby: parseInt(userId) || 1,
+        trainingmattypemodifiedby: parseInt(userId) || 1,
+      };
+
+      try {
+        const response = await api.post(endpoint, payload, {
+          headers: {
+            "X-Module": "Training Management",
+            "X-Action": action,
+          },
+        });
+
+        const { statusCode, message } = response.data;
+
+        if (statusCode === 200) {
+          return { success: true, message: "Material type added successfully!" };
+        } else if (statusCode === 409) {
+          throw new Error(message || "Duplicate Entry: Material type already exists!");
+        } else if (statusCode === 400) {
+          throw new Error(message || "Invalid data provided.");
+        } else {
+          throw new Error(message || "Failed to save material type.");
+        }
+      } catch (err) {
+        console.error("API Error (Create):", err);
+        if (err.response && err.response.status === 409) {
+          throw new Error(err.response.data.message || "Duplicate Entry: Material type already exists!");
+        }
+        if (err.response && err.response.status === 400) {
+          throw new Error(err.response.data.message || "Validation Error.");
+        }
+        throw err;
+      }
+    }, [formData, userId]);
+
+    // --- Update Material Type ---
+    const updateMaterialType = useCallback(async () => {
+      try {
+        const response = await api.post(
+          "/updateTrainingMatType",
+          {
+            trainingmattypeid: editType.trainingmattypeid,
+            trainingmattype: formData.trainingmattype,
+            trainingmattypeadminstate: editType.trainingmattypeadminstate ?? 1,
+            trainingmattypemodifiedby: parseInt(userId) || 1,
+          },
+          {
+            headers: {
+              "X-Module": "Training Management",
+              "X-Action": "Update Material Type",
+            },
+          }
+        );
+
+        const { statusCode, message } = response.data;
+
+        if (statusCode === 200) {
+          return { success: true, message: "Material type updated successfully!" };
+        } else if (statusCode === 409) {
+          throw new Error(message || "Duplicate Entry: Material type already exists!");
+        } else if (statusCode === 400) {
+          throw new Error(message || "Invalid data provided.");
+        } else {
+          throw new Error(message || "Failed to update material type.");
+        }
+      } catch (err) {
+        console.error("API Error (Update):", err);
+        if (err.response && err.response.status === 409) {
+          throw new Error(err.response.data.message || "Duplicate Entry: Material type already exists!");
+        }
+        if (err.response && err.response.status === 400) {
+          throw new Error(err.response.data.message || "Validation Error.");
+        }
+        throw err;
+      }
+    }, [formData, editType, userId]);
+
+    // --- Handle Toggle Status ---
     const handleToggleStatus = useCallback(
       (type) => {
         const isCurrentlyEnabled = type.trainingmattypeadminstate === 1;
@@ -205,6 +288,7 @@ const TrainingMaterialType = forwardRef(
           cancelButtonColor: "#6c757d",
           confirmButtonText: `Yes, ${actionText} it!`,
           cancelButtonText: "Cancel",
+          zIndex: 9999,
         }).then((result) => {
           if (result.isConfirmed) {
             setIsToggling((prev) => ({
@@ -212,48 +296,53 @@ const TrainingMaterialType = forwardRef(
               [type.trainingmattypeid]: true,
             }));
 
-            const params = new URLSearchParams();
-            // Sending full payload to prevent nulling other fields
-            params.append("trainingmattypeid", type.trainingmattypeid);
-            params.append("trainingmattype", type.trainingmattype);
-            params.append("trainingmattypeadminstate", newState);
-            params.append("trainingmattypemodifiedby", userId || "1");
-
-            const url = `${IP}/itelinc/updateTrainingMatType?${params.toString()}`;
-
-            fetch(url, {
-              method: "POST",
-              mode: "cors",
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/x-www-form-urlencoded",
-                userid: userId || "1",
-                "X-Module": "Training Management",
-                "X-Action": "Update Material Type Status",
-              },
-            })
-              .then((res) => res.json())
-              .then((data) => {
-                if (data.statusCode === 200) {
-                  Swal.fire(
-                    "Success!",
-                    `Material type ${actionText}d successfully!`,
-                    "success"
-                  );
+            api
+              .post(
+                "/updateTrainingMatType",
+                {
+                  trainingmattypeid: type.trainingmattypeid,
+                  trainingmattype: type.trainingmattype,
+                  trainingmattypeadminstate: newState,
+                  trainingmattypemodifiedby: userId,
+                },
+                {
+                  headers: {
+                    "X-Module": "Training Management",
+                    "X-Action": "Update Material Type Status",
+                  },
+                }
+              )
+              .then((response) => {
+                const { statusCode, message } = response.data;
+                if (statusCode === 200) {
+                  Swal.fire({
+                    title: "Success!",
+                    text: `Material type ${actionText}d successfully!`,
+                    icon: "success",
+                    zIndex: 9999,
+                  });
                   refreshData();
                 } else {
-                  throw new Error(
-                    data.message || `Failed to ${actionText} material type`
-                  );
+                  throw new Error(message || `Failed to ${actionText} material type`);
                 }
               })
               .catch((err) => {
-                console.error(`Error ${actionText}ing material type:`, err);
-                Swal.fire(
-                  "Error",
-                  `Failed to ${actionText}: ${err.message}`,
-                  "error"
-                );
+                console.error("Error toggling status:", err);
+                let errorMessage = "Failed to update status!";
+                if (err.response && err.response.status === 409) {
+                  errorMessage = "Conflict: Cannot change status due to existing references.";
+                } else if (err.response && err.response.data && err.response.data.message) {
+                  errorMessage = err.response.data.message;
+                } else if (err.message) {
+                  errorMessage = err.message;
+                }
+
+                Swal.fire({
+                  title: "Error",
+                  text: errorMessage,
+                  icon: "error",
+                  zIndex: 9999,
+                });
               })
               .finally(() => {
                 setIsToggling((prev) => ({
@@ -264,136 +353,82 @@ const TrainingMaterialType = forwardRef(
           }
         });
       },
-      [IP, userId, token, refreshData]
+      [userId, refreshData]
     );
-
-    const createMaterialType = useCallback(async () => {
-      try {
-        const url = `${IP}/itelinc/addTrainingMatType`;
-        const params = new URLSearchParams({
-          trainingmattype: formData.trainingmattype,
-          trainingmattypeadminstate: 1, // Default active state
-          trainingmattypecreatedby: parseInt(userId) || 1,
-          trainingmattypemodifiedby: parseInt(userId) || 1,
-        });
-
-        const response = await fetch(`${url}?${params.toString()}`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            userid: userId || "1",
-            "X-Module": "Training Management",
-            "X-Action": "Add Material Type",
-          },
-        });
-
-        const data = await response.json();
-        return data;
-      } catch (error) {
-        console.error("Error creating material type:", error);
-        throw error;
-      }
-    }, [IP, formData, token, userId]);
-
-    const updateMaterialType = useCallback(async () => {
-      try {
-        const url = `${IP}/itelinc/updateTrainingMatType`;
-        const params = new URLSearchParams({
-          trainingmattypeid: editType.trainingmattypeid,
-          trainingmattype: formData.trainingmattype,
-          // Preserve current admin state when editing details, or default to 1 if undefined
-          trainingmattypeadminstate: editType.trainingmattypeadminstate ?? 1,
-          trainingmattypemodifiedby: parseInt(userId) || 1,
-        });
-
-        const response = await fetch(`${url}?${params.toString()}`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            userid: userId || "1",
-            "X-Module": "Training Management",
-            "X-Action": "Update Material Type",
-          },
-        });
-
-        const data = await response.json();
-        return data;
-      } catch (error) {
-        console.error("Error updating material type:", error);
-        throw error;
-      }
-    }, [IP, formData, editType, token, userId]);
 
     const deleteMaterialType = useCallback(
       async (typeId) => {
         try {
-          const url = `${IP}/itelinc/deleteTrainingMatType`;
-          const params = new URLSearchParams({
-            trainingmattypeid: typeId,
-            trainingmattypemodifiedby: parseInt(userId) || 1,
-          });
-
-          const response = await fetch(`${url}?${params.toString()}`, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-              userid: userId || "1",
-              "X-Module": "Training Management",
-              "X-Action": "Delete Material Type",
-            },
-          });
-
-          const data = await response.json();
-          return data;
+          const response = await api.post(
+            "/deleteTrainingMatType",
+            {}, 
+            {
+              params: {
+                trainingmattypeid: typeId,
+                trainingmattypemodifiedby: parseInt(userId) || 1,
+              },
+              headers: {
+                "X-Module": "Training Management",
+                "X-Action": "Delete Material Type",
+              },
+            }
+          );
+          return response.data;
         } catch (error) {
           console.error("Error deleting material type:", error);
           throw error;
         }
       },
-      [IP, token, userId]
+      [userId]
     );
 
+    // --- Master Submit Handler ---
     const handleSubmit = useCallback(
       async (e) => {
         e.preventDefault();
 
-        // Validation
         if (!validateField("trainingmattype", formData.trainingmattype)) {
           showToast("Please fix errors in the form", "error");
           return;
         }
 
         setIsSaving(true);
-        setIsModalOpen(false);
 
         try {
-          let response;
+          let result;
           if (editType) {
-            response = await updateMaterialType();
+            result = await updateMaterialType();
           } else {
-            response = await createMaterialType();
+            result = await createMaterialType();
           }
 
-          if (response.statusCode === 200 || response.status === "success") {
-            Swal.fire(
-              "Success!",
-              editType
-                ? "Material type updated successfully"
-                : "Material type added successfully",
-              "success"
-            );
-            refreshData();
-          } else {
-            throw new Error(response.message || "Operation failed");
-          }
+          Swal.fire({
+            title: "Success!",
+            text: result.message,
+            icon: "success",
+            zIndex: 9999,
+          });
+          
+          setIsModalOpen(false);
+          refreshData();
+          setFormData({ trainingmattype: "" });
+          setFieldErrors({});
+          setEditType(null);
+
         } catch (err) {
           console.error("Error in handleSubmit:", err);
-          showToast(`Failed to save: ${err.message}`, "error");
-          Swal.fire("Error", err.message || "Operation failed", "error");
-          setIsModalOpen(true); // Reopen modal on error
+          const errorMessage = err.message || "Operation failed";
+
+          Swal.fire({
+            title: "Error",
+            text: errorMessage,
+            icon: "error",
+            zIndex: 9999,
+          }).then(() => {
+            setIsModalOpen(true); 
+          });
+
+          showToast(`Failed: ${errorMessage}`, "error");
         } finally {
           setIsSaving(false);
         }
@@ -402,8 +437,8 @@ const TrainingMaterialType = forwardRef(
         validateField,
         formData,
         editType,
-        updateMaterialType,
         createMaterialType,
+        updateMaterialType,
         refreshData,
         showToast,
       ]
@@ -419,6 +454,7 @@ const TrainingMaterialType = forwardRef(
           confirmButtonColor: "#d33",
           cancelButtonColor: "#3085d6",
           confirmButtonText: "Yes, delete it!",
+          zIndex: 9999,
         }).then(async (result) => {
           if (result.isConfirmed) {
             setIsDeleting((prev) => ({
@@ -433,19 +469,25 @@ const TrainingMaterialType = forwardRef(
                 response.statusCode === 200 ||
                 response.status === "success"
               ) {
-                Swal.fire(
-                  "Deleted!",
-                  "Material type has been deleted.",
-                  "success"
-                );
+                Swal.fire({
+                  title: "Deleted!",
+                  text: "Material type has been deleted.",
+                  icon: "success",
+                  zIndex: 9999,
+                });
                 refreshData();
               } else {
                 throw new Error(response.message || "Failed to delete");
               }
             } catch (error) {
               console.error("Error deleting material type:", error);
+              Swal.fire({
+                title: "Error",
+                text: error.message || "Failed to delete",
+                icon: "error",
+                zIndex: 9999,
+              });
               showToast(`Failed to delete: ${error.message}`, "error");
-              Swal.fire("Error", error.message, "error");
             } finally {
               setIsDeleting((prev) => ({
                 ...prev,
@@ -476,15 +518,12 @@ const TrainingMaterialType = forwardRef(
           sortable: true,
           flex: 1,
           renderCell: (params) => {
-          const value = params.value; // "Active" or "Inactive"
-          const color = value === "Active" ? "green" : "red";
-
-          return (
-            <span style={{ fontWeight: 600, color }}>
-              {value}
-            </span>
-          );
-        },
+            const value = params.value;
+            const color = value === "Active" ? "green" : "red";
+            return (
+              <span style={{ fontWeight: 600, color }}>{value}</span>
+            );
+          },
         },
         {
           field: "createdname",
@@ -522,22 +561,19 @@ const TrainingMaterialType = forwardRef(
         },
       ];
 
-      // Actions column
       if (hasWriteAccess && Number(roleid) === 1) {
         baseColumns.push({
           field: "actions",
           headerName: "Actions",
-          width: 150, // Adjusted width
+          width: 150,
           sortable: false,
           filterable: false,
           renderCell: (params) => {
             if (!params || !params.row) return null;
-            
             const isCurrentlyEnabled = params.row.trainingmattypeadminstate === 1;
 
             return (
               <Box>
-                {/* Toggle Status Button */}
                 <ActionButton
                   color={isCurrentlyEnabled ? "on" : "off"}
                   onClick={() => handleToggleStatus(params.row)}
@@ -568,7 +604,6 @@ const TrainingMaterialType = forwardRef(
                 >
                   <EditIcon fontSize="small" />
                 </ActionButton>
-                
               </Box>
             );
           },
@@ -623,6 +658,15 @@ const TrainingMaterialType = forwardRef(
     // RENDER
     return (
       <Box sx={{ p: 2 }}>
+        {/* 2. Add GlobalStyles to force z-index via CSS with !important */}
+        <GlobalStyles
+          styles={{
+            '.swal2-container': {
+              zIndex: '99999 !important',
+            },
+          }}
+        />
+
         <Box
           sx={{
             display: "flex",
@@ -657,7 +701,6 @@ const TrainingMaterialType = forwardRef(
           loading={loading}
         />
 
-        {/* Modal for Add/Edit */}
         <Dialog
           open={isModalOpen}
           onClose={() => setIsModalOpen(false)}
@@ -727,7 +770,6 @@ const TrainingMaterialType = forwardRef(
           </form>
         </Dialog>
 
-        {/* Toast notification */}
         <Snackbar
           open={toast.open}
           autoHideDuration={6000}
@@ -743,7 +785,6 @@ const TrainingMaterialType = forwardRef(
           </Alert>
         </Snackbar>
 
-        {/* Loading overlay */}
         <StyledBackdrop open={isSaving || Object.values(isToggling).some(Boolean)}>
           <Box
             sx={{

@@ -254,7 +254,7 @@ export default function IncubateeTable() {
     incubateesdateofincorporation: "",
     incubateesdateofextension: "",
     incubateeswebsite: "",
-    incubateesincrecid: "",
+    // incubateesincrecid removed from state - hardcoded in submit
     incubateescreatedtime: "",
     incubateesmodifiedtime: "",
     incubateescreatedby: "",
@@ -380,7 +380,6 @@ export default function IncubateeTable() {
       setCheckingDuplicate((prev) => ({ ...prev, [field]: true }));
 
       // Debounce the API call
-      // ✅ AFTER
       debounceTimeouts.current[field] = setTimeout(() => {
         // Map each form field name to the exact API key your endpoint expects
         const fieldToApiKey = {
@@ -546,13 +545,13 @@ export default function IncubateeTable() {
       incubateesaccountantname: "",
       incubateesauditorname: "",
       incubateessecretaryname: "",
-      incubateesadminstate: 0,
+      incubateesadminstate: 1, // Default to Active (1) when adding
       incubateesfoundername: "",
       incubateesdateofincubation: "",
       incubateesdateofincorporation: "",
       incubateesdateofextension: "",
       incubateeswebsite: "",
-      incubateesincrecid: "",
+      // incubateesincrecid removed from state
       incubateescreatedtime: new Date().toISOString().split("T")[0],
       incubateesmodifiedtime: new Date().toISOString().split("T")[0],
       incubateescreatedby: userId || 1,
@@ -600,7 +599,7 @@ export default function IncubateeTable() {
           incubatee.incubateesdateofincorporation || "",
         incubateesdateofextension: incubatee.incubateesdateofextension || "",
         incubateeswebsite: incubatee.incubateeswebsite || "",
-        incubateesincrecid: incubatee.incubateesincrecid || "",
+        // incubateesincrecid removed from state
         incubateescreatedtime:
           incubatee.incubateescreatedtime ||
           new Date().toISOString().split("T")[0],
@@ -641,8 +640,8 @@ export default function IncubateeTable() {
         "incubateesdin",
         "incubateespannumber",
         "incubateesuan",
-        "incubateesgst", // added
-        "incubateesdpiitnumber", // added
+        "incubateesgst",
+        "incubateesdpiitnumber",
       ];
 
       if (duplicateCheckFields.includes(name) && !error) {
@@ -960,7 +959,7 @@ export default function IncubateeTable() {
                 formData.incubateesdateofincorporation,
               incubateesdateofextension: formData.incubateesdateofextension,
               incubateeswebsite: formData.incubateeswebsite,
-              incubateesincrecid: formData.incubateesincrecid,
+              incubateesincrecid: 1, // Hardcoded value as requested
               incubateescreatedtime: formData.incubateescreatedtime,
               incubateesmodifiedtime: formData.incubateesmodifiedtime,
               incubateescreatedby: formData.incubateescreatedby,
@@ -1018,7 +1017,7 @@ export default function IncubateeTable() {
                 incubateesdateofincorporation: "",
                 incubateesdateofextension: "",
                 incubateeswebsite: "",
-                incubateesincrecid: "",
+                // incubateesincrecid removed
                 incubateescreatedtime: "",
                 incubateesmodifiedtime: "",
                 incubateescreatedby: "",
@@ -1779,29 +1778,33 @@ export default function IncubateeTable() {
                         }}
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", mt: 1 }}
-                      >
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={formData.incubateesadminstate === 1}
-                              onChange={handleChange}
-                              name="incubateesadminstate"
-                              color="primary"
-                              disabled={isSaving}
-                            />
-                          }
-                          label="Status"
-                        />
-                        <Typography variant="caption" sx={{ ml: 1 }}>
-                          {formData.incubateesadminstate === 1
-                            ? "Active"
-                            : "Inactive"}
-                        </Typography>
-                      </Box>
-                    </Grid>
+
+                    {/* Status Toggle: Only visible when editing */}
+                    {editIncubatee && (
+                      <Grid item xs={12} sm={6}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", mt: 1 }}
+                        >
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                checked={formData.incubateesadminstate === 1}
+                                onChange={handleChange}
+                                name="incubateesadminstate"
+                                color="primary"
+                                disabled={isSaving}
+                              />
+                            }
+                            label="Status"
+                          />
+                          <Typography variant="caption" sx={{ ml: 1 }}>
+                            {formData.incubateesadminstate === 1
+                              ? "Active"
+                              : "Inactive"}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    )}
                   </Grid>
                 </CardContent>
               </SectionCard>
@@ -1879,17 +1882,7 @@ export default function IncubateeTable() {
                         variant="outlined"
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <StyledTextField
-                        fullWidth
-                        label="Incubatee Rec ID"
-                        name="incubateesincrecid"
-                        value={formData.incubateesincrecid}
-                        onChange={handleChange}
-                        disabled={isSaving}
-                        variant="outlined"
-                      />
-                    </Grid>
+                    {/* Incubatee Rec ID Field Removed from UI */}
                     <Grid item xs={12} sm={6}>
                       <StyledTextField
                         fullWidth

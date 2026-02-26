@@ -158,11 +158,11 @@ api.interceptors.response.use(
     // Then, handle authentication errors
     // Check for the message in the decrypted response data
     if (
-      error.response?.status === 401 &&
-      (error.response?.data?.message?.includes("Invalid JWT signature") ||
-        error.response?.data?.message?.includes("Token expired") ||
-        error.response?.data?.message?.includes("Authentication error") ||
-        error.response?.data?.message?.includes("JWT expired"))
+      error.response?.status === 401 ||
+      error.response?.data?.message?.includes("Invalid JWT signature") ||
+      error.response?.data?.message?.includes("Token expired") ||
+      error.response?.data?.message?.includes("Authentication error") ||
+      error.response?.data?.message?.includes("JWT expired")
     ) {
       // Clear user session
       sessionStorage.removeItem("token");

@@ -88,3 +88,7 @@
 .tab-content {
   padding-top: 1rem;
 }
+
+.swal-zindex {
+  z-index: 2000 !important;
+}

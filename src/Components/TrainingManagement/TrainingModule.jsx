@@ -7,9 +7,8 @@ import React, {
   useCallback,
 } from "react";
 import Swal from "sweetalert2";
-import { IPAdress } from "../Datafetching/IPAdrees";
-import { Download } from "lucide-react"; // Retained if used elsewhere, otherwise optional
-import { FaTimes } from "react-icons/fa"; // Retained if used elsewhere
+import { Download } from "lucide-react";
+import { FaTimes } from "react-icons/fa";
 
 // Material UI imports
 import {
@@ -37,13 +36,13 @@ import { styled } from "@mui/material/styles";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CloseIcon from "@mui/icons-material/Close";
-import ToggleOnIcon from "@mui/icons-material/ToggleOn"; // ON Icon
-import ToggleOffIcon from "@mui/icons-material/ToggleOff"; // OFF Icon
-import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // Status Active
-import CancelIcon from "@mui/icons-material/Cancel"; // Status Inactive
+import ToggleOnIcon from "@mui/icons-material/ToggleOn";
+import ToggleOffIcon from "@mui/icons-material/ToggleOff";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
 import ArticleIcon from "@mui/icons-material/Article";
 
-// Import your reusable component
+// Import your reusable component and API instance
 import ReusableDataGrid from "../Datafetching/ReusableDataGrid";
 import api from "../Datafetching/api";
 import { useWriteAccess } from "../Datafetching/useWriteAccess";
@@ -59,11 +58,11 @@ const ActionButton = styled(IconButton)(({ theme, color }) => ({
   backgroundColor:
     color === "edit"
       ? theme.palette.primary.main
-      : color === "on" // ON State -> Green
+      : color === "on"
       ? theme.palette.success.main
-      : color === "off" // OFF State -> Grey
+      : color === "off"
       ? theme.palette.grey[500]
-      : color === "delete" // Delete -> Red
+      : color === "delete"
       ? theme.palette.error.main
       : theme.palette.error.main,
   color: "white",
@@ -81,7 +80,7 @@ const ActionButton = styled(IconButton)(({ theme, color }) => ({
   },
 }));
 
-// Common date formatting function (from reference)
+// Common date formatting function
 const formatDate = (dateStr) => {
   if (!dateStr) return "-";
   try {
@@ -96,7 +95,6 @@ const formatDate = (dateStr) => {
         hour12: false,
         });
     }
-    // Fallback to array/handling logic if needed, but ISO is standard in the new response
     return dateStr; 
   } catch (error) {
     console.error("Error formatting date:", error);
@@ -110,11 +108,11 @@ const TrainingModule = forwardRef(({ title = "🎓 Training Module" }, ref) => {
     "/Incubation/Dashboard/TrainingManagementPage"
   );
   const userId = sessionStorage.getItem("userid");
-  const token = sessionStorage.getItem("token");
+  const token = sessionStorage.getItem("token"); // Retained if needed elsewhere
   const roleid = sessionStorage.getItem("roleid");
   const incUserid = sessionStorage.getItem("incuserid");
   const incubateeId = sessionStorage.getItem("incubateeId");
-  const IP = IPAdress;
+  // const IP = IPAdress; // No longer needed with centralized api instance
 
   // STATE DECLARATIONS
   const [trainings, setTrainings] = useState([]);
@@ -138,7 +136,7 @@ const TrainingModule = forwardRef(({ title = "🎓 Training Module" }, ref) => {
   const [fieldErrors, setFieldErrors] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState({});
-  const [isToggling, setIsToggling] = useState({}); // State for Toggle Status
+  const [isToggling, setIsToggling] = useState({});
   
   const [toast, setToast] = useState({
     open: false,
@@ -152,7 +150,7 @@ const TrainingModule = forwardRef(({ title = "🎓 Training Module" }, ref) => {
     openAddModal,
   }));
 
-  // --- API CALLS ---
+  // --- API CALLS (Using api.post) ---
 
   const fetchTrainingList = useCallback(async () => {
     setLoading(true);
@@ -181,56 +179,56 @@ const TrainingModule = forwardRef(({ title = "🎓 Training Module" }, ref) => {
   }, [userId]);
 
   const fetchCategories = useCallback(async () => {
-  try {
-    const response = await api.post(
-      "/resources/generic/gettrainingcatlist",
-      {
-        userId: parseInt(userId) || 1,
-        userIncId: "ALL",
-      },
-      {
-        headers: {
-          "X-Module": "Training Management",
-          "X-Action": "Fetch Categories",
+    try {
+      const response = await api.post(
+        "/resources/generic/gettrainingcatlist",
+        {
+          userId: parseInt(userId) || 1,
+          userIncId: "ALL",
         },
-      }
-    );
+        {
+          headers: {
+            "X-Module": "Training Management",
+            "X-Action": "Fetch Categories",
+          },
+        }
+      );
 
-    const filteredCategories = (response.data.data || []).filter(
-      (item) => item.trainingcatadminstate === 1
-    );
+      const filteredCategories = (response.data.data || []).filter(
+        (item) => item.trainingcatadminstate === 1
+      );
 
-    setCategories(filteredCategories);
-  } catch (err) {
-    console.error("Error fetching categories:", err);
-  }
-}, [userId]);
+      setCategories(filteredCategories);
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    }
+  }, [userId]);
 
   const fetchSubCategories = useCallback(async () => {
-  try {
-    const response = await api.post(
-      "/resources/generic/gettrainingsubcatlist",
-      {
-        userId: parseInt(userId) || 1,
-        userIncId: "ALL",
-      },
-      {
-        headers: {
-          "X-Module": "Training Management",
-          "X-Action": "Fetch Sub Categories",
+    try {
+      const response = await api.post(
+        "/resources/generic/gettrainingsubcatlist",
+        {
+          userId: parseInt(userId) || 1,
+          userIncId: "ALL",
         },
-      }
-    );
+        {
+          headers: {
+            "X-Module": "Training Management",
+            "X-Action": "Fetch Sub Categories",
+          },
+        }
+      );
 
-    const filteredSubCategories = (response.data.data || []).filter(
-      (item) => item.trainingsubcatadminstate === 1
-    );
+      const filteredSubCategories = (response.data.data || []).filter(
+        (item) => item.trainingsubcatadminstate === 1
+      );
 
-    setSubCategories(filteredSubCategories);
-  } catch (err) {
-    console.error("Error fetching subcategories:", err);
-  }
-}, [userId]);
+      setSubCategories(filteredSubCategories);
+    } catch (err) {
+      console.error("Error fetching subcategories:", err);
+    }
+  }, [userId]);
 
   const fetchMaterialTypes = useCallback(async () => {
     try {
@@ -420,37 +418,30 @@ const TrainingModule = forwardRef(({ title = "🎓 Training Module" }, ref) => {
             [training.trainingid]: true,
           }));
 
-          const params = new URLSearchParams();
-          // Sending full payload to prevent nulling other fields
-          params.append("trainingid", training.trainingid);
-          params.append("trainingcatid", training.trainingcatid);
-          params.append("trainingsubcatid", training.trainingsubcatid);
-          params.append("trainingmattypeid", training.trainingmattypeid);
-          params.append("trainingmodulename", training.trainingmodulename);
-          params.append(
-            "trainingdescription",
-            training.trainingdescription
-          );
-          params.append("trainingmateriallink", training.trainingmateriallink);
-          params.append("trainingadminstate", newState);
-          params.append("trainingmodifiedby", userId || "1");
-
-          const url = `${IP}/itelinc/updateTraining?${params.toString()}`;
-
-          fetch(url, {
-            method: "POST",
-            mode: "cors",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/x-www-form-urlencoded",
-              userid: userId || "1",
-              "X-Module": "Training Management",
-              "X-Action": "Update Training Status",
-            },
-          })
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.statusCode === 200) {
+          // API call using api.post
+          api
+            .post(
+              "/updateTraining",
+              {
+                trainingid: training.trainingid,
+                trainingcatid: training.trainingcatid,
+                trainingsubcatid: training.trainingsubcatid,
+                trainingmattypeid: training.trainingmattypeid,
+                trainingmodulename: training.trainingmodulename,
+                trainingdescription: training.trainingdescription,
+                trainingmateriallink: training.trainingmateriallink,
+                trainingadminstate: newState,
+                trainingmodifiedby: userId,
+              },
+              {
+                headers: {
+                  "X-Module": "Training Management",
+                  "X-Action": "Update Training Status",
+                },
+              }
+            )
+            .then((response) => {
+              if (response.data.statusCode === 200) {
                 Swal.fire(
                   "Success!",
                   `Training module ${actionText}d successfully!`,
@@ -459,13 +450,36 @@ const TrainingModule = forwardRef(({ title = "🎓 Training Module" }, ref) => {
                 refreshData();
               } else {
                 throw new Error(
-                  data.message || `Failed to ${actionText} training module`
+                  response.data.message || `Failed to ${actionText} training module`
                 );
               }
             })
             .catch((err) => {
-              console.error(`Error ${actionText}ing training:`, err);
-              Swal.fire("Error", `Failed to ${actionText}: ${err.message}`, "error");
+              console.error("Error updating training status:", err);
+              if (err.response && err.response.status === 409) {
+                Swal.fire(
+                  "Duplicate Entry",
+                  err.response.data.message ||
+                    "Conflict detected. Please try again.",
+                  "warning"
+                );
+                return;
+              }
+              if (err.message && err.message.includes("409")) {
+                Swal.fire(
+                  "Duplicate Entry",
+                  "Conflict detected. Please try again.",
+                  "warning"
+                );
+                return;
+              }
+
+              Swal.fire(
+                "Error",
+                err.response?.data?.message ||
+                  `Failed to ${actionText} training module!`,
+                "error"
+              );
             })
             .finally(() => {
               setIsToggling((prev) => ({
@@ -476,106 +490,92 @@ const TrainingModule = forwardRef(({ title = "🎓 Training Module" }, ref) => {
         }
       });
     },
-    [IP, userId, token, refreshData]
+    [userId, refreshData]
   );
 
   const createTraining = useCallback(async () => {
     try {
-      const url = `${IP}/itelinc/addTraining`;
-      const params = new URLSearchParams({
-        trainingcatid: formData.trainingcatid,
-        trainingsubcatid: formData.trainingsubcatid,
-        trainingmattypeid: formData.trainingmattypeid,
-        trainingmodulename: formData.trainingmodulename,
-        trainingdescription: formData.trainingdescription,
-        trainingmateriallink: formData.trainingmateriallink,
-        trainingadminstate: 1, // Default to active on create
-        trainingcreatedby: parseInt(userId) || 1,
-        trainingmodifiedby: parseInt(userId) || 1,
-      });
-
-      const response = await fetch(`${url}?${params.toString()}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          userid: userId || "1",
-          "X-Module": "Training Management",
-          "X-Action": "Add Training",
+      const response = await api.post(
+        "/addTraining",
+        {
+          trainingcatid: formData.trainingcatid,
+          trainingsubcatid: formData.trainingsubcatid,
+          trainingmattypeid: formData.trainingmattypeid,
+          trainingmodulename: formData.trainingmodulename,
+          trainingdescription: formData.trainingdescription,
+          trainingmateriallink: formData.trainingmateriallink,
+          trainingadminstate: 1,
+          trainingcreatedby: parseInt(userId) || 1,
+          trainingmodifiedby: parseInt(userId) || 1,
         },
-      });
-
-      const data = await response.json();
-      return data;
+        {
+          headers: {
+            "X-Module": "Training Management",
+            "X-Action": "Add Training",
+          },
+        }
+      );
+      return response.data; // Return the data payload to maintain compatibility with handleSubmit
     } catch (error) {
       console.error("Error creating training:", error);
       throw error;
     }
-  }, [IP, formData, token, userId]);
+  }, [formData, userId]);
 
   const updateTraining = useCallback(async () => {
     try {
-      const url = `${IP}/itelinc/updateTraining`;
-      const params = new URLSearchParams({
-        trainingid: editTraining.trainingid,
-        trainingcatid: formData.trainingcatid,
-        trainingsubcatid: formData.trainingsubcatid,
-        trainingmattypeid: formData.trainingmattypeid,
-        trainingmodulename: formData.trainingmodulename,
-        trainingdescription: formData.trainingdescription,
-        trainingmateriallink: formData.trainingmateriallink,
-        // Preserve current admin state when editing details, or default to 1 if undefined
-        trainingadminstate: editTraining.trainingadminstate ?? 1,
-        trainingmodifiedby: parseInt(userId) || 1,
-      });
-
-      const response = await fetch(`${url}?${params.toString()}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          userid: userId || "1",
-          "X-Module": "Training Management",
-          "X-Action": "Update Training",
+      const response = await api.post(
+        "/updateTraining",
+        {
+          trainingid: editTraining.trainingid,
+          trainingcatid: formData.trainingcatid,
+          trainingsubcatid: formData.trainingsubcatid,
+          trainingmattypeid: formData.trainingmattypeid,
+          trainingmodulename: formData.trainingmodulename,
+          trainingdescription: formData.trainingdescription,
+          trainingmateriallink: formData.trainingmateriallink,
+          trainingadminstate: editTraining.trainingadminstate ?? 1,
+          trainingmodifiedby: parseInt(userId) || 1,
         },
-      });
-
-      const data = await response.json();
-      return data;
+        {
+          headers: {
+            "X-Module": "Training Management",
+            "X-Action": "Update Training",
+          },
+        }
+      );
+      return response.data;
     } catch (error) {
       console.error("Error updating training:", error);
       throw error;
     }
-  }, [IP, formData, editTraining, token, userId]);
+  }, [formData, editTraining, userId]);
 
   const deleteTraining = useCallback(
     async (trainingId) => {
       try {
-        const url = `${IP}/itelinc/deleteTraining`;
-        const params = new URLSearchParams({
-          trainingid: trainingId,
-          trainingmodifiedby: parseInt(userId) || 1,
-        });
-
-        const response = await fetch(`${url}?${params.toString()}`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            userid: userId || "1",
-            "X-Module": "Training Management",
-            "X-Action": "Delete Training",
-          },
-        });
-
-        const data = await response.json();
-        return data;
+        // Using params for delete ID as per pattern in reference code
+        const response = await api.post(
+          "/deleteTraining",
+          {}, // Empty body
+          {
+            params: {
+              trainingid: trainingId,
+              trainingmodifiedby: parseInt(userId) || 1,
+            },
+            headers: {
+              "X-Module": "Training Management",
+              "X-Action": "Delete Training",
+            },
+          }
+        );
+        return response.data;
       } catch (error) {
         console.error("Error deleting training:", error);
         throw error;
       }
     },
-    [IP, token, userId]
+    [userId]
   );
 
   const handleSubmit = useCallback(
@@ -749,7 +749,7 @@ const TrainingModule = forwardRef(({ title = "🎓 Training Module" }, ref) => {
         width: 150,
         sortable: true,
         renderCell: (params) => {
-          const value = params.value; // "Active" or "Inactive"
+          const value = params.value;
           const color = value === "Active" ? "green" : "red";
 
           return (
@@ -796,7 +796,7 @@ const TrainingModule = forwardRef(({ title = "🎓 Training Module" }, ref) => {
             {
               field: "actions",
               headerName: "Actions",
-              width: 180, // Increased width
+              width: 180,
               sortable: false,
               filterable: false,
               renderCell: (params) => {
@@ -806,7 +806,6 @@ const TrainingModule = forwardRef(({ title = "🎓 Training Module" }, ref) => {
 
                 return (
                   <Box>
-                    {/* Toggle Status Button */}
                     <ActionButton
                       color={isCurrentlyEnabled ? "on" : "off"}
                       onClick={() => handleToggleStatus(params.row)}
@@ -930,7 +929,6 @@ const TrainingModule = forwardRef(({ title = "🎓 Training Module" }, ref) => {
         loading={loading}
       />
 
-      {/* Modal for Add/Edit */}
       <Dialog
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -1140,7 +1138,6 @@ const TrainingModule = forwardRef(({ title = "🎓 Training Module" }, ref) => {
         </form>
       </Dialog>
 
-      {/* Toast notification */}
       <Snackbar
         open={toast.open}
         autoHideDuration={6000}
@@ -1156,7 +1153,6 @@ const TrainingModule = forwardRef(({ title = "🎓 Training Module" }, ref) => {
         </Alert>
       </Snackbar>
 
-      {/* Loading overlay */}
       <StyledBackdrop open={isSaving || Object.values(isToggling).some(Boolean)}>
         <Box
           sx={{

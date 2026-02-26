@@ -6,7 +6,6 @@ import React, {
   useContext,
 } from "react";
 import Swal from "sweetalert2";
-import { IPAdress } from "../Datafetching/IPAdrees";
 import { Download } from "lucide-react";
 import { FaTimes } from "react-icons/fa";
 import { DataContext } from "../Datafetching/DataProvider";
@@ -93,7 +92,7 @@ const formatDate = (dateStr) => {
     const minute = dateStr.substring(10, 12);
     const second = dateStr.substring(12, 14);
     const formattedDate = new Date(
-      `${year}-${month}-${day}T${hour}:${minute}:${second}`,
+      `${year}-${month}-${day}T${hour}:${minute}:${second}`
     );
     return formattedDate.toLocaleString("en-US", {
       year: "numeric",
@@ -111,14 +110,13 @@ const formatDate = (dateStr) => {
 
 export default function TrainingSubCatTable() {
   const hasWriteAccess = useWriteAccess(
-    "/Incubation/Dashboard/TrainingManagementPage",
+    "/Incubation/Dashboard/TrainingManagementPage"
   );
 
   // --- 1. STATE DECLARATIONS ---
   const userId = sessionStorage.getItem("userid");
-  const token = sessionStorage.getItem("token");
+  const token = sessionStorage.getItem("token"); // Kept for reference if needed elsewhere, though api handles auth
   const incUserid = sessionStorage.getItem("incuserid");
-  const IP = IPAdress;
 
   const [trainingSubcats, setTrainingSubcats] = useState([]);
   const [trainingCats, setTrainingCats] = useState([]);
@@ -145,7 +143,7 @@ export default function TrainingSubCatTable() {
       const response = await api.post(
         `/resources/generic/gettrainingsubcatlist`,
         {
-          userId: parseInt(userId) || 1,
+          userId: parseInt(userId, 10) || 1,
           userIncId: "ALL",
         },
         {
@@ -153,7 +151,7 @@ export default function TrainingSubCatTable() {
             "X-Module": "Training Management",
             "X-Action": "Fetch Training SubCategories",
           },
-        },
+        }
       );
 
       setTrainingSubcats(response.data.data || []);
@@ -165,39 +163,37 @@ export default function TrainingSubCatTable() {
     }
   }, [userId]);
 
-  
   const fetchTrainingCategories = useCallback(async () => {
-  setLoading(true);
-  setError(null);
+    setLoading(true);
+    setError(null);
 
-  try {
-    const response = await api.post(
-      `/resources/generic/gettrainingcatlist`,
-      {
-        userId: parseInt(userId) || 1,
-        userIncId: "ALL",
-      },
-      {
-        headers: {
-          "X-Module": "Training Management",
-          "X-Action": "Fetch Training Categories",
+    try {
+      const response = await api.post(
+        `/resources/generic/gettrainingcatlist`,
+        {
+          userId: parseInt(userId, 10) || 1,
+          userIncId: "ALL",
         },
-      },
-    );
+        {
+          headers: {
+            "X-Module": "Training Management",
+            "X-Action": "Fetch Training Categories",
+          },
+        }
+      );
 
-    const filteredCategories = (response.data.data || []).filter(
-      (item) => item.trainingcatadminstate === 1
-    );
+      const filteredCategories = (response.data.data || []).filter(
+        (item) => item.trainingcatadminstate === 1
+      );
 
-    setTrainingCats(filteredCategories);
-
-  } catch (err) {
-    console.error("Error fetching training categories:", err);
-    setError("Failed to load categories. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-}, [userId]);
+      setTrainingCats(filteredCategories);
+    } catch (err) {
+      console.error("Error fetching training categories:", err);
+      setError("Failed to load categories. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
 
   const refreshData = useCallback(() => {
     fetchTrainingSubCategories();
@@ -228,7 +224,7 @@ export default function TrainingSubCatTable() {
       setIsModalOpen(true);
       setError(null);
     },
-    [fetchTrainingCategories],
+    [fetchTrainingCategories]
   );
 
   const handleChange = useCallback((e) => {
@@ -253,45 +249,41 @@ export default function TrainingSubCatTable() {
         cancelButtonText: "Cancel",
       }).then((result) => {
         if (result.isConfirmed) {
-          setIsToggling((prev) => ({ ...prev, [subcat.trainingsubcatid]: true }));
+          setIsToggling((prev) => ({
+            ...prev,
+            [subcat.trainingsubcatid]: true,
+          }));
 
-          const params = new URLSearchParams();
-          // Sending full payload to prevent nulling other fields
-          params.append("trainingsubcatid", subcat.trainingsubcatid);
-          params.append("trainingsubcatname", subcat.trainingsubcatname);
-          params.append(
-            "trainingsubcatdescription",
-            subcat.trainingsubcatdescription,
-          );
-          params.append("trainingsubcatcatid", subcat.trainingsubcatcatid);
-          params.append("trainingsubcatadminstate", newState);
-          params.append("trainingsubcatmodifiedby", userId || "1");
-
-          const url = `${IP}/itelinc/updateTrainingSubCat?${params.toString()}`;
-
-          fetch(url, {
-            method: "POST",
-            mode: "cors",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/x-www-form-urlencoded",
-              userid: userId || "1",
-              "X-Module": "Training Management",
-              "X-Action": "Update Training SubCategory Status",
-            },
-          })
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.statusCode === 200) {
+          // API call using api.post
+          api
+            .post(
+              "/updateTrainingSubCat",
+              {
+                trainingsubcatid: subcat.trainingsubcatid,
+                trainingsubcatname: subcat.trainingsubcatname,
+                trainingsubcatdescription: subcat.trainingsubcatdescription,
+                trainingsubcatcatid: subcat.trainingsubcatcatid,
+                trainingsubcatadminstate: newState,
+                trainingsubcatmodifiedby: userId,
+              },
+              {
+                headers: {
+                  "X-Module": "Training Management",
+                  "X-Action": "Update Training SubCategory Status",
+                },
+              }
+            )
+            .then((response) => {
+              if (response.data.statusCode === 200) {
                 Swal.fire(
                   "Success!",
                   `Subcategory ${actionText}d successfully!`,
-                  "success",
+                  "success"
                 );
                 refreshData();
               } else {
                 throw new Error(
-                  data.message || `Failed to ${actionText} subcategory`,
+                  response.data.message || `Failed to ${actionText} subcategory`
                 );
               }
             })
@@ -300,16 +292,19 @@ export default function TrainingSubCatTable() {
               Swal.fire(
                 "Error",
                 `Failed to ${actionText}: ${err.message}`,
-                "error",
+                "error"
               );
             })
             .finally(() => {
-              setIsToggling((prev) => ({ ...prev, [subcat.trainingsubcatid]: false }));
+              setIsToggling((prev) => ({
+                ...prev,
+                [subcat.trainingsubcatid]: false,
+              }));
             });
         }
       });
     },
-    [IP, userId, token, refreshData],
+    [userId, refreshData]
   );
   // ----------------------------------------------
 
@@ -331,29 +326,35 @@ export default function TrainingSubCatTable() {
             allowOutsideClick: false,
             didOpen: () => Swal.showLoading(),
           });
-          const deleteUrl = `${IP}/itelinc/deleteTrainingSubCat?trainingsubcatid=${subcatId}&trainingsubcatmodifiedby=${userId}`;
-          fetch(deleteUrl, {
-            method: "POST",
-            mode: "cors",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/x-www-form-urlencoded",
-              userid: userId || "1",
-              "X-Module": "Training Management",
-              "X-Action": "Delete Training SubCategory",
-            },
-          })
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.statusCode === 200) {
+
+          // API call using api.post
+          api
+            .post(
+              "/deleteTrainingSubCat",
+              {}, // Empty body
+              {
+                params: {
+                  trainingsubcatid: subcatId,
+                  trainingsubcatmodifiedby: userId,
+                },
+                headers: {
+                  "X-Module": "Training Management",
+                  "X-Action": "Delete Training SubCategory",
+                },
+              }
+            )
+            .then((response) => {
+              if (response.data.statusCode === 200) {
                 Swal.fire(
                   "Deleted!",
                   "Subcategory deleted successfully!",
-                  "success",
+                  "success"
                 );
                 refreshData();
               } else {
-                throw new Error(data.message || "Failed to delete subcategory");
+                throw new Error(
+                  response.data.message || "Failed to delete subcategory"
+                );
               }
             })
             .catch((err) => {
@@ -366,7 +367,7 @@ export default function TrainingSubCatTable() {
         }
       });
     },
-    [IP, userId, token, refreshData],
+    [userId, refreshData]
   );
 
   const handleSubmit = useCallback(
@@ -386,94 +387,89 @@ export default function TrainingSubCatTable() {
       }
 
       setIsModalOpen(false);
-      const params = new URLSearchParams();
 
-      // Common params
-      params.append("trainingsubcatname", formData.trainingsubcatname.trim());
-      params.append(
-        "trainingsubcatdescription",
-        formData.trainingsubcatdescription.trim(),
-      );
-      params.append("trainingsubcatcatid", formData.trainingsubcatcatid);
-      params.append("trainingsubcatadminstate", "1"); // Defaulting to 1 as per prompt
-
-      if (editSubCat) {
-        params.append("trainingsubcatid", editSubCat.trainingsubcatid);
-        params.append("trainingsubcatmodifiedby", userId || "1");
-      } else {
-        params.append("trainingsubcatcreatedby", userId || "1");
-        params.append("trainingsubcatmodifiedby", userId || "1");
-      }
-
-      const baseUrl = editSubCat
-        ? `${IP}/itelinc/updateTrainingSubCat`
-        : `${IP}/itelinc/addTrainingSubCat`;
-      const url = `${baseUrl}?${params.toString()}`;
-      const action = editSubCat
+      const isEdit = !!editSubCat;
+      const endpoint = isEdit ? "/updateTrainingSubCat" : "/addTrainingSubCat";
+      const action = isEdit
         ? "Edit Training SubCategory"
         : "Add Training SubCategory";
 
-      fetch(url, {
-        method: "POST",
-        mode: "cors",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-          userid: userId || "1",
-          "X-Module": "Training Management",
-          "X-Action": action,
-        },
-      })
-        .then(async (res) => {
-          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-          return res.json();
-        })
-        .then((data) => {
-          if (data.statusCode === 200) {
-            if (
-              data.data &&
-              typeof data.data === "string" &&
-              data.data.includes("Duplicate entry")
-            ) {
-              setError("Subcategory name already exists for this category");
-              Swal.fire(
-                "Duplicate",
-                "Subcategory name already exists for this category!",
-                "warning",
-              ).then(() => setIsModalOpen(true));
-            } else {
-              setEditSubCat(null);
-              setFormData({
-                trainingsubcatname: "",
-                trainingsubcatdescription: "",
-                trainingsubcatcatid: "",
-              });
-              refreshData();
-              Swal.fire(
-                "Success",
-                data.message || "Subcategory saved successfully!",
-                "success",
-              );
+      const payload = {
+        trainingsubcatname: formData.trainingsubcatname.trim(),
+        trainingsubcatdescription: formData.trainingsubcatdescription.trim(),
+        trainingsubcatcatid: formData.trainingsubcatcatid,
+        trainingsubcatadminstate: "1", // Defaulting to 1
+        ...(isEdit
+          ? {
+              trainingsubcatid: editSubCat.trainingsubcatid,
+              trainingsubcatmodifiedby: userId,
             }
+          : {
+              trainingsubcatcreatedby: userId,
+              trainingsubcatmodifiedby: userId,
+            }),
+      };
+
+      // API call using api.post
+      api
+        .post(endpoint, payload, {
+          headers: {
+            "X-Module": "Training Management",
+            "X-Action": action,
+          },
+        })
+        .then((response) => {
+          if (response.data.statusCode === 200) {
+            setEditSubCat(null);
+            setFormData({
+              trainingsubcatname: "",
+              trainingsubcatdescription: "",
+              trainingsubcatcatid: "",
+            });
+            refreshData();
+            Swal.fire(
+              "Success",
+              response.data.message || "Subcategory saved successfully!",
+              "success"
+            );
           } else {
             throw new Error(
-              data.message ||
-                `Operation failed with status: ${data.statusCode}`,
+              response.data.message ||
+                `Operation failed with status: ${response.data.statusCode}`
             );
           }
         })
         .catch((err) => {
-          console.error("Error saving subcategory:", err);
-          setError(`Failed to save: ${err.message}`);
+          console.error("Error saving training subcategory:", err);
+          if (err.response && err.response.status === 409) {
+            Swal.fire(
+              "Duplicate Entry",
+              err.response.data.message ||
+                "Subcategory name already exists for this category!",
+              "warning"
+            ).then(() => setIsModalOpen(true));
+            return;
+          }
+
+          if (err.message && err.message.includes("409")) {
+            Swal.fire(
+              "Duplicate Entry",
+              "Subcategory name already exists for this category!",
+              "warning"
+            ).then(() => setIsModalOpen(true));
+            return;
+          }
+
           Swal.fire(
             "Error",
-            `Failed to save subcategory: ${err.message}`,
-            "error",
+            err.response?.data?.message ||
+              "Failed to save training subcategory!",
+            "error"
           ).then(() => setIsModalOpen(true));
         })
         .finally(() => setIsSaving(false));
     },
-    [formData, editSubCat, IP, userId, token, refreshData],
+    [formData, editSubCat, userId, refreshData]
   );
 
   // --- 3. MEMOIZED VALUES ---
@@ -499,22 +495,6 @@ export default function TrainingSubCatTable() {
         width: 250,
         sortable: true,
       },
-      // {
-      //   field: "trainingsubcatactivestate",
-      //   headerName: "Status",
-      //   width: 150,
-      //   sortable: true,
-      //   renderCell: (params) => {
-      //     const value = params.value; // "Active" or "Inactive"
-      //     const color = value === "Active" ? "green" : "red";
-
-      //     return (
-      //       <span style={{ fontWeight: 600, color }}>
-      //         {value}
-      //       </span>
-      //     );
-      //   },
-      // },
       {
         field: "trainingsubcatcreatedby",
         headerName: "Created By",
@@ -566,7 +546,8 @@ export default function TrainingSubCatTable() {
               renderCell: (params) => {
                 if (!params?.row) return null;
 
-                const isCurrentlyEnabled = params.row.trainingsubcatadminstate === 1;
+                const isCurrentlyEnabled =
+                  params.row.trainingsubcatadminstate === 1;
 
                 return (
                   <Box>
@@ -615,7 +596,7 @@ export default function TrainingSubCatTable() {
       openEditModal,
       handleDelete,
       handleToggleStatus,
-    ],
+    ]
   );
 
   const exportConfig = useMemo(
@@ -623,7 +604,7 @@ export default function TrainingSubCatTable() {
       filename: "training_subcategories",
       sheetName: "Training Subcategories",
     }),
-    [],
+    []
   );
 
   const onExportData = useMemo(
@@ -633,7 +614,8 @@ export default function TrainingSubCatTable() {
         Category: subcat.trainingcatname || "N/A",
         "Subcategory Name": subcat.trainingsubcatname || "",
         Description: subcat.trainingsubcatdescription || "",
-        Status: subcat.trainingsubcatadminstate === 1 ? "Active" : "Inactive",
+        Status:
+          subcat.trainingsubcatadminstate === 1 ? "Active" : "Inactive",
         "Created By": isNaN(subcat.trainingsubcatcreatedby)
           ? subcat.trainingsubcatcreatedby
           : "Admin",
@@ -643,7 +625,7 @@ export default function TrainingSubCatTable() {
           : "Admin",
         "Modified Time": formatDate(subcat.trainingsubcatmodifiedtime),
       })),
-    [],
+    []
   );
 
   // --- 4. EFFECTS ---
@@ -664,11 +646,7 @@ export default function TrainingSubCatTable() {
       >
         <Typography variant="h4">🎓 Training Subcategories</Typography>
         {hasWriteAccess && (
-          <Button
-            variant="contained"
-            onClick={openAddModal}
-            disabled={isSaving}
-          >
+          <Button variant="contained" onClick={openAddModal} disabled={isSaving}>
             + Add Subcategory
           </Button>
         )}
