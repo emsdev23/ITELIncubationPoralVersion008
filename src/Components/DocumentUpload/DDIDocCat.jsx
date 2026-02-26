@@ -378,7 +378,7 @@ export default function DocCatTable() {
                     >
                       <EditIcon fontSize="small" />
                     </ActionButton>
-                    <ActionButton
+                    {/* <ActionButton
                       color="delete"
                       onClick={() => handleDelete(params.row.ddidoccatrecid)}
                       disabled={isSaving || isDeleting[params.row.ddidoccatrecid]}
@@ -389,7 +389,7 @@ export default function DocCatTable() {
                       ) : (
                         <DeleteIcon fontSize="small" />
                       )}
-                    </ActionButton>
+                    </ActionButton> */}
                   </Box>
                 );
               },

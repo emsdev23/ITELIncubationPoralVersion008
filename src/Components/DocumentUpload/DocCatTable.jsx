@@ -176,14 +176,14 @@ export default function DocCatTable() {
   const openEditModal = useCallback(
     (cat) => {
       // Prevent editing if the category is disabled
-      if (cat.doccatadminstate === 0) {
-        Swal.fire(
-          "Restricted",
-          "Cannot edit a disabled category. Please enable it first.",
-          "warning"
-        );
-        return;
-      }
+      // if (cat.doccatadminstate === 0) {
+      //   Swal.fire(
+      //     "Restricted",
+      //     "Cannot edit a disabled category. Please enable it first.",
+      //     "warning"
+      //   );
+      //   return;
+      // }
 
       setEditCat(cat);
       setFormData({
@@ -417,35 +417,35 @@ export default function DocCatTable() {
         width: 300,
         sortable: true,
       },
-      {
-        field: "doccatadminstate",
-        headerName: "Status",
-        width: 120,
-        sortable: true,
-        renderCell: (params) => {
-          if (!params?.row) return "-";
-          const status = params.row.doccatadminstate;
-          const isActive = status === 1 || status === undefined;
+      // {
+      //   field: "doccatadminstate",
+      //   headerName: "Status",
+      //   width: 120,
+      //   sortable: true,
+      //   renderCell: (params) => {
+      //     if (!params?.row) return "-";
+      //     const status = params.row.doccatadminstate;
+      //     const isActive = status === 1 || status === undefined;
 
-          return (
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              <IconButton
-                size="small"
-                sx={{
-                  mr: 0.5,
-                  color: isActive ? "success.main" : "error.main",
-                  cursor: "default",
-                }}
-              >
-                {isActive ? <CheckCircleIcon fontSize="small" /> : <CancelIcon fontSize="small" />}
-              </IconButton>
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                {isActive ? "Active" : "Inactive"}
-              </Typography>
-            </Box>
-          );
-        },
-      },
+      //     return (
+      //       <Box sx={{ display: "flex", alignItems: "center" }}>
+      //         <IconButton
+      //           size="small"
+      //           sx={{
+      //             mr: 0.5,
+      //             color: isActive ? "success.main" : "error.main",
+      //             cursor: "default",
+      //           }}
+      //         >
+      //           {isActive ? <CheckCircleIcon fontSize="small" /> : <CancelIcon fontSize="small" />}
+      //         </IconButton>
+      //         <Typography variant="body2" sx={{ fontWeight: 500 }}>
+      //           {isActive ? "Active" : "Inactive"}
+      //         </Typography>
+      //       </Box>
+      //     );
+      //   },
+      // },
       {
         field: "doccatcreatedby",
         headerName: "Created By",
@@ -508,7 +508,7 @@ export default function DocCatTable() {
                 return (
                   <Box>
                     {/* Toggle Status Button */}
-                    <ActionButton
+                    {/* <ActionButton
                       color={isCurrentlyEnabled ? "on" : "off"}
                       onClick={() => handleToggleStatus(params.row)}
                       disabled={
@@ -525,20 +525,20 @@ export default function DocCatTable() {
                       ) : (
                         <ToggleOffIcon fontSize="small" />
                       )}
-                    </ActionButton>
+                    </ActionButton> */}
 
                     {/* Edit Button */}
                     <ActionButton
                       color="edit"
                       onClick={() => openEditModal(params.row)}
-                      disabled={
-                        isSaving ||
-                        isDeleting[params.row.doccatrecid] ||
-                        isDisabled || // Disabled if state is 0
-                        isToggling === params.row.doccatrecid
-                      }
+                      // disabled={
+                      //   isSaving ||
+                      //   isDeleting[params.row.doccatrecid] ||
+                      //   isDisabled || // Disabled if state is 0
+                      //   isToggling === params.row.doccatrecid
+                      // }
                       title="Edit"
-                      className={isDisabled ? "disabled" : ""}
+                      // className={isDisabled ? "disabled" : ""}
                     >
                       <EditIcon fontSize="small" />
                     </ActionButton>

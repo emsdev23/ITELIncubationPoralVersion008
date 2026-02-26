@@ -165,33 +165,39 @@ export default function TrainingSubCatTable() {
     }
   }, [userId]);
 
+  
   const fetchTrainingCategories = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  setLoading(true);
+  setError(null);
 
-    try {
-      const response = await api.post(
-        `/resources/generic/gettrainingcatlist`,
-        {
-          userId: parseInt(userId) || 1,
-          userIncId: "ALL",
+  try {
+    const response = await api.post(
+      `/resources/generic/gettrainingcatlist`,
+      {
+        userId: parseInt(userId) || 1,
+        userIncId: "ALL",
+      },
+      {
+        headers: {
+          "X-Module": "Training Management",
+          "X-Action": "Fetch Training Categories",
         },
-        {
-          headers: {
-            "X-Module": "Training Management",
-            "X-Action": "Fetch Training Categories",
-          },
-        },
-      );
+      },
+    );
 
-      setTrainingCats(response.data.data || []);
-    } catch (err) {
-      console.error("Error fetching training categories:", err);
-      setError("Failed to load categories. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
+    const filteredCategories = (response.data.data || []).filter(
+      (item) => item.trainingcatadminstate === 1
+    );
+
+    setTrainingCats(filteredCategories);
+
+  } catch (err) {
+    console.error("Error fetching training categories:", err);
+    setError("Failed to load categories. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+}, [userId]);
 
   const refreshData = useCallback(() => {
     fetchTrainingSubCategories();
@@ -493,35 +499,22 @@ export default function TrainingSubCatTable() {
         width: 250,
         sortable: true,
       },
-      {
-        field: "trainingsubcatadminstate",
-        headerName: "Status",
-        width: 120,
-        sortable: true,
-        renderCell: (params) => {
-          if (!params?.row) return "-";
-          const status = params.row.trainingsubcatadminstate;
-          const isActive = status === 1 || status === undefined;
+      // {
+      //   field: "trainingsubcatactivestate",
+      //   headerName: "Status",
+      //   width: 150,
+      //   sortable: true,
+      //   renderCell: (params) => {
+      //     const value = params.value; // "Active" or "Inactive"
+      //     const color = value === "Active" ? "green" : "red";
 
-          return (
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              <IconButton
-                size="small"
-                sx={{
-                  mr: 0.5,
-                  color: isActive ? "success.main" : "error.main",
-                  cursor: "default",
-                }}
-              >
-                {isActive ? <CheckCircleIcon fontSize="small" /> : <CancelIcon fontSize="small" />}
-              </IconButton>
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                {isActive ? "Active" : "Inactive"}
-              </Typography>
-            </Box>
-          );
-        },
-      },
+      //     return (
+      //       <span style={{ fontWeight: 600, color }}>
+      //         {value}
+      //       </span>
+      //     );
+      //   },
+      // },
       {
         field: "trainingsubcatcreatedby",
         headerName: "Created By",
@@ -578,7 +571,7 @@ export default function TrainingSubCatTable() {
                 return (
                   <Box>
                     {/* Toggle Status Button */}
-                    <ActionButton
+                    {/* <ActionButton
                       color={isCurrentlyEnabled ? "on" : "off"}
                       onClick={() => handleToggleStatus(params.row)}
                       disabled={
@@ -595,7 +588,7 @@ export default function TrainingSubCatTable() {
                       ) : (
                         <ToggleOffIcon fontSize="small" />
                       )}
-                    </ActionButton>
+                    </ActionButton> */}
 
                     <ActionButton
                       color="edit"

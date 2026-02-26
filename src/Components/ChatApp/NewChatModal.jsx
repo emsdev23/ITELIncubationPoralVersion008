@@ -16,6 +16,7 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
     INCUBATEE_ADMIN: 4,
     INCUBATEE_MANAGER: 5,
     INCUBATEE_OPERATOR: 6,
+    MENTOR: 12, 
   };
 
   const [chatType, setChatType] = useState("");
@@ -23,6 +24,11 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [users, setUsers] = useState([]);
   const [chatTypes, setChatTypes] = useState([]);
+  
+  // State for Mentor specific POCs
+  const [mentorPocs, setMentorPocs] = useState([]);
+  const [mentorPocsLoading, setMentorPocsLoading] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [usersLoading, setUsersLoading] = useState(true);
@@ -33,6 +39,11 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
   useEffect(() => {
     fetchChatTypes();
     fetchUsers();
+
+    // Fetch Mentor POCs if the current user is a Mentor
+    if (parseInt(currentUser.roleid) === ROLE_IDS.MENTOR) {
+      fetchMentorPocs();
+    }
   }, []);
 
   useEffect(() => {
@@ -44,6 +55,39 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // =======================================================================
+  // NEW: Fetch Mentor POCs
+  // =======================================================================
+    const fetchMentorPocs = async () => {
+    try {
+      setMentorPocsLoading(true);
+      const response = await api.post("/resources/generic/getmentorspoc", {
+        userId: String(currentUser.id),
+        userIncId: String(currentUser.incUserid)
+      });
+
+      const apiData = response.data;
+      let finalData = [];
+
+      // Check if the response is directly an array
+      if (Array.isArray(apiData)) {
+        finalData = apiData;
+      } 
+      // Check if the response is an object containing a "data" array
+      else if (apiData && Array.isArray(apiData.data)) {
+        finalData = apiData.data;
+      }
+
+      setMentorPocs(finalData);
+    } catch (error) {
+      console.error("Error fetching mentor POCs:", error);
+      // Ensure it is always an array, even on error
+      setMentorPocs([]); 
+    } finally {
+      setMentorPocsLoading(false);
+    }
+  };
 
   const fetchChatTypes = async () => {
     try {
@@ -58,7 +102,8 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
         const defaultChatTypes = [
           {
             value: 1,
-            text: "incubator to incubatee",
+            // Updated text as requested: "Incubator <--> Incubatee"
+            text: "Incubator <--> Incubatee", 
             chattypedescription: "incubator to incubatee",
           },
           {
@@ -127,27 +172,57 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
           : [...prev, userId],
       );
     } else {
+      // For Mentors and single-select scenarios
       setSelectedUsers([userId]);
       setDropdownOpen(false);
     }
   };
 
   // =======================================================================
-  // MODIFICATION: Filter users based on Role ID logic
+  // MODIFICATION: Filter users based on Role ID logic (Mentor Added)
   // =======================================================================
-  const getVisibleUsers = () => {
+    const getVisibleUsers = () => {
     const currentRoleId = parseInt(currentUser.roleid);
 
-    // If current user is INCUBATEE_ADMIN (Role 4)
+    // --- MENTOR LOGIC ---
+    if (currentRoleId === ROLE_IDS.MENTOR) {
+      const combinedList = [];
+
+      // 1. Get users with Role ID 1 (Superadmin/Incubator Admin) from the main user list
+      const role1Users = users.filter((user) => {
+        const userRoleId = parseInt(user.usersrolesrecid);
+        return userRoleId === ROLE_IDS.SUPERADMIN; 
+      });
+
+      combinedList.push(...role1Users);
+
+      // 2. Map and add users from the 'getmentorspoc' API response
+      // Added safety check (Array.isArray) to prevent crash
+      const mappedPocs = (Array.isArray(mentorPocs) ? mentorPocs : []).map((poc) => ({
+        usersrecid: poc.mentorincassnincuserrecid,
+        usersname: poc.usersname,
+        rolesname: "Incubatee Admin", 
+        usersrolesrecid: "MENTOR_POC",
+      }));
+
+      // Combine and remove duplicates
+      const allUsers = [...combinedList, ...mappedPocs];
+      const uniqueUsers = Array.from(
+        new Map(allUsers.map((item) => [item.usersrecid, item])).values()
+      );
+
+      return uniqueUsers;
+    }
+
+    // --- INCUBATEE ADMIN LOGIC ---
     if (currentRoleId === ROLE_IDS.INCUBATEE_ADMIN) {
-      // Filter users: check 'usersrolesrecid' for SUPERADMIN (1) and ADMIN (2)
       return users.filter((user) => {
         const userRoleId = parseInt(user.usersrolesrecid);
         return userRoleId === ROLE_IDS.SUPERADMIN || userRoleId === ROLE_IDS.ADMIN;
       });
     }
 
-    // Default behavior for all other roles
+    // --- DEFAULT BEHAVIOR ---
     return users;
   };
   // =======================================================================
@@ -173,13 +248,11 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
     }
   };
 
-  // Fixed checkbox handler
   const handleCheckboxChange = (e, userId) => {
     e.stopPropagation();
     handleUserSelection(userId);
   };
 
-  // Fixed select all checkbox handler
   const handleSelectAllCheckboxChange = (e) => {
     e.stopPropagation();
     handleSelectAll();
@@ -268,6 +341,12 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
       return chatTypes.filter((type) => type.value === 2);
     }
 
+    // If user is a MENTOR
+    if (userRoleId === ROLE_IDS.MENTOR) {
+      // Show ONLY "Incubator <--> Incubatee" (value 1 based on default types)
+      return chatTypes.filter((type) => type.value === 1);
+    }
+
     // Fallback for any other role
     return [];
   };
@@ -300,11 +379,21 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
     const visibleUsers = getVisibleUsers();
     const visibleIds = visibleUsers.map(u => u.usersrecid.toString());
     
+    // Helper to find name in either list
+    const findUserName = (idStr) => {
+      // Check main users list
+      const mainUser = users.find((u) => u.usersrecid.toString() === idStr);
+      if (mainUser) return mainUser.usersname;
+      
+      // Check mentor POCs list
+      const pocUser = mentorPocs.find((p) => p.mentorincassnincuserrecid.toString() === idStr);
+      if (pocUser) return pocUser.usersname;
+      
+      return null;
+    };
+
     const selectedNames = selectedUsers
-      .map(
-        (userId) =>
-          users.find((u) => u.usersrecid.toString() === userId)?.usersname,
-      )
+      .map((userId) => findUserName(userId))
       .filter(Boolean);
       
     if (selectedNames.length === 0)
@@ -435,7 +524,6 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
                       </div>
                     </div>
                   )}
-                  {/* CHANGED: Mapped over getVisibleUsers() instead of users */}
                   {getVisibleUsers().map((user) => (
                     <div
                       key={user.usersrecid}
@@ -462,7 +550,7 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
                       </div>
                     </div>
                   ))}
-                  {getVisibleUsers().length === 0 && !usersLoading && (
+                  {getVisibleUsers().length === 0 && !usersLoading && !mentorPocsLoading && (
                      <div className="dropdown-item" style={{cursor: 'default', color: '#888'}}>
                        No available users found.
                      </div>

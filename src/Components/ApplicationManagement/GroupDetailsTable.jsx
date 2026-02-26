@@ -180,7 +180,7 @@ export default function GroupDetailsTable() {
 
         api
           .post(
-            "itelinc/deleteGrpApps",
+            "/deleteGrpApps",
             {}, // Empty body
             {
               params: {
@@ -236,7 +236,7 @@ export default function GroupDetailsTable() {
     setIsModalOpen(false); // Close modal immediately to show loading state
 
     const isEdit = !!editGroup;
-    const endpoint = isEdit ? "itelinc/updateGrpApps" : "itelinc/addGrpApps";
+    const endpoint = isEdit ? "/updateGrpApps" : "/addGrpApps";
     const module = "Application Management";
     const action = isEdit ? "Edit Group" : "Add Group";
 

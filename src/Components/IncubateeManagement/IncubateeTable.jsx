@@ -1108,7 +1108,7 @@ export default function IncubateeTable() {
       },
       {
         field: "incubateesadminstate",
-        headerName: "Admin State",
+        headerName: "Status",
         width: 120,
         sortable: true,
         renderCell: (params) => {
@@ -1793,7 +1793,7 @@ export default function IncubateeTable() {
                               disabled={isSaving}
                             />
                           }
-                          label="Admin State"
+                          label="Status"
                         />
                         <Typography variant="caption" sx={{ ml: 1 }}>
                           {formData.incubateesadminstate === 1

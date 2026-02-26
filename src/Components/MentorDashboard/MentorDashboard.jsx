@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useContext, useRef } from "react";
-import "./MentorDashboard.css";
+import "./mentorDashboard.css";
 import EditMentorModal from "./EditMentorModal";
 import api from "../Datafetching/api";
 import { DataContext } from "../Datafetching/DataProvider";
 import { CircleFadingPlus, Camera } from "lucide-react";
 import Swal from "sweetalert2";
+import MentorIncubateeTable from "./Mentorincubateetable";
 
 const MentorDashboard = () => {
   const [mentors, setMentors] = useState([]);
@@ -848,6 +849,10 @@ const MentorDashboard = () => {
               </>
             )}
           </div>
+        </div>
+
+        <div style={{ marginTop: "3rem" }}>
+          <MentorIncubateeTable />
         </div>
       </div>
 

@@ -59,7 +59,12 @@ function MainDashboard() {
 
         {/* Incubator Selector and Table Component */}
 
-        <CompanyTable companyList={listOfIncubatees} />
+        {roleid === "0" || roleid === "12" ? (
+          ""
+        ) : (
+          <CompanyTable companyList={listOfIncubatees} />
+        )}
+
         <br />
         <DDIDocumentUploadModal />
         <br />

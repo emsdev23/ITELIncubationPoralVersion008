@@ -1953,31 +1953,18 @@ const formatDate = (dateStr) => {
         sortable: true,
       },
       {
-        field: "documentadminstate",
+        field: "documentactivestate",
         headerName: "Status",
-        width: 120,
+        width: 150,
         sortable: true,
         renderCell: (params) => {
-          if (!params?.row) return "-";
-          const status = params.row.documentadminstate;
-          const isActive = status === 1 || status === undefined;
+          const value = params.value; // "Active" or "Inactive"
+          const color = value === "Active" ? "green" : "red";
 
           return (
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              <IconButton
-          size="small"
-          sx={{
-            mr: 0.5,
-            color: isActive ? "success.main" : "error.main",
-            cursor: "default",
-          }}
-              >
-          {isActive ? <CheckCircleIcon fontSize="small" /> : <CancelIcon fontSize="small" />}
-              </IconButton>
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-          {isActive ? "Active" : "Inactive"}
-              </Typography>
-            </Box>
+            <span style={{ fontWeight: 600, color }}>
+              {value}
+            </span>
           );
         },
       },

@@ -181,46 +181,56 @@ const TrainingModule = forwardRef(({ title = "🎓 Training Module" }, ref) => {
   }, [userId]);
 
   const fetchCategories = useCallback(async () => {
-    try {
-      const response = await api.post(
-        "/resources/generic/gettrainingcatlist",
-        {
-          userId: parseInt(userId) || 1,
-          userIncId: "ALL",
+  try {
+    const response = await api.post(
+      "/resources/generic/gettrainingcatlist",
+      {
+        userId: parseInt(userId) || 1,
+        userIncId: "ALL",
+      },
+      {
+        headers: {
+          "X-Module": "Training Management",
+          "X-Action": "Fetch Categories",
         },
-        {
-          headers: {
-            "X-Module": "Training Management",
-            "X-Action": "Fetch Categories",
-          },
-        }
-      );
-      setCategories(response.data.data || []);
-    } catch (err) {
-      console.error("Error fetching categories:", err);
-    }
-  }, [userId]);
+      }
+    );
+
+    const filteredCategories = (response.data.data || []).filter(
+      (item) => item.trainingcatadminstate === 1
+    );
+
+    setCategories(filteredCategories);
+  } catch (err) {
+    console.error("Error fetching categories:", err);
+  }
+}, [userId]);
 
   const fetchSubCategories = useCallback(async () => {
-    try {
-      const response = await api.post(
-        "/resources/generic/gettrainingsubcatlist",
-        {
-          userId: parseInt(userId) || 1,
-          userIncId: "ALL",
+  try {
+    const response = await api.post(
+      "/resources/generic/gettrainingsubcatlist",
+      {
+        userId: parseInt(userId) || 1,
+        userIncId: "ALL",
+      },
+      {
+        headers: {
+          "X-Module": "Training Management",
+          "X-Action": "Fetch Sub Categories",
         },
-        {
-          headers: {
-            "X-Module": "Training Management",
-            "X-Action": "Fetch Sub Categories",
-          },
-        }
-      );
-      setSubCategories(response.data.data || []);
-    } catch (err) {
-      console.error("Error fetching subcategories:", err);
-    }
-  }, [userId]);
+      }
+    );
+
+    const filteredSubCategories = (response.data.data || []).filter(
+      (item) => item.trainingsubcatadminstate === 1
+    );
+
+    setSubCategories(filteredSubCategories);
+  } catch (err) {
+    console.error("Error fetching subcategories:", err);
+  }
+}, [userId]);
 
   const fetchMaterialTypes = useCallback(async () => {
     try {
@@ -237,7 +247,12 @@ const TrainingModule = forwardRef(({ title = "🎓 Training Module" }, ref) => {
           },
         }
       );
-      setMaterialTypes(response.data.data || []);
+
+      const filteredData = (response.data.data || []).filter(
+        (item) => item.trainingmattypeadminstate === 1
+      );
+
+      setMaterialTypes(filteredData);
     } catch (err) {
       console.error("Error fetching material types:", err);
     }
@@ -729,31 +744,18 @@ const TrainingModule = forwardRef(({ title = "🎓 Training Module" }, ref) => {
         },
       },
       {
-        field: "trainingadminstate",
+        field: "trainingactivestate",
         headerName: "Status",
-        width: 120,
+        width: 150,
         sortable: true,
         renderCell: (params) => {
-          if (!params?.row) return "-";
-          const status = params.row.trainingadminstate;
-          const isActive = status === 1 || status === undefined;
+          const value = params.value; // "Active" or "Inactive"
+          const color = value === "Active" ? "green" : "red";
 
           return (
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              <IconButton
-                size="small"
-                sx={{
-                  mr: 0.5,
-                  color: isActive ? "success.main" : "error.main",
-                  cursor: "default",
-                }}
-              >
-                {isActive ? <CheckCircleIcon fontSize="small" /> : <CancelIcon fontSize="small" />}
-              </IconButton>
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                {isActive ? "Active" : "Inactive"}
-              </Typography>
-            </Box>
+            <span style={{ fontWeight: 600, color }}>
+              {value}
+            </span>
           );
         },
       },

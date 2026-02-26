@@ -54,24 +54,24 @@ const ActionButton = styled(IconButton)(({ theme, color }) => ({
     color === "edit"
       ? theme.palette.primary.main
       : color === "on"
-      ? theme.palette.success.main
-      : color === "off"
-      ? theme.palette.grey[500]
-      : color === "disable"
-      ? theme.palette.grey[500]
-      : theme.palette.success.main,
+        ? theme.palette.success.main
+        : color === "off"
+          ? theme.palette.grey[500]
+          : color === "disable"
+            ? theme.palette.grey[500]
+            : theme.palette.success.main,
   color: "white",
   "&:hover": {
     backgroundColor:
       color === "edit"
         ? theme.palette.primary.dark
         : color === "on"
-        ? theme.palette.success.dark
-        : color === "off"
-        ? theme.palette.grey[700]
-        : color === "disable"
-        ? theme.palette.grey[700]
-        : theme.palette.success.dark,
+          ? theme.palette.success.dark
+          : color === "off"
+            ? theme.palette.grey[700]
+            : color === "disable"
+              ? theme.palette.grey[700]
+              : theme.palette.success.dark,
   },
   "&.disabled": {
     backgroundColor: theme.palette.grey[300],
@@ -80,13 +80,114 @@ const ActionButton = styled(IconButton)(({ theme, color }) => ({
   },
 }));
 
+// ─────────────────────────────────────────────
+// Validation helpers
+// ─────────────────────────────────────────────
+const VALIDATION_STYLES = `
+  .swal-form-container { display: flex; flex-direction: column; gap: 4px; }
+  .swal-form-row { width: 100%; margin-bottom: 8px; }
+  .swal2-input, .swal2-select { width: 100% !important; margin: 0 !important; }
+  .swal2-select { padding: 0.75em !important; }
+  input[readonly] { background-color: #f8f9fa; cursor: not-allowed; opacity: 0.8; }
+  select:disabled { background-color: #f8f9fa; cursor: not-allowed; opacity: 0.8; }
+  .field-error {
+    color: #d32f2f;
+    font-size: 12px;
+    margin-top: 4px;
+    display: none;
+    align-items: center;
+    gap: 4px;
+  }
+  .field-error.visible { display: flex; }
+  .swal2-input.invalid { border-color: #d32f2f !important; box-shadow: 0 0 0 2px rgba(211,47,47,0.2) !important; }
+  .swal2-input.valid { border-color: #2e7d32 !important; box-shadow: 0 0 0 2px rgba(46,125,50,0.2) !important; }
+`;
+
+const validators = {
+  usersname: (val) => {
+    if (!val || !val.trim()) return "Name is required.";
+    if (val.trim().length < 3) return "Name must be at least 3 characters.";
+    if (/[^a-zA-Z0-9 _-]/.test(val))
+      return "Name cannot contain special characters (allowed: letters, numbers, space, _ -)";
+    return "";
+  },
+  usersemail: (val) => {
+    if (!val || !val.trim()) return "Email is required.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim()))
+      return "Please enter a valid email address.";
+    return "";
+  },
+  userspassword: (val) => {
+    if (!val || !val.trim()) return "Password is required.";
+    if (val.length < 8) return "Password must be at least 8 characters.";
+    if (!/[A-Z]/.test(val))
+      return "Password must contain at least one uppercase letter.";
+    if (!/[0-9]/.test(val)) return "Password must contain at least one number.";
+    return "";
+  },
+};
+
+/**
+ * Attach real-time validation to an input element.
+ * @param {HTMLInputElement} input
+ * @param {'usersname'|'usersemail'|'userspassword'} field
+ */
+function attachValidation(input, field) {
+  if (!input) return;
+  const errorEl = document.getElementById(`error-${field}`);
+
+  const validate = () => {
+    const msg = validators[field](input.value);
+    if (msg) {
+      input.classList.add("invalid");
+      input.classList.remove("valid");
+      if (errorEl) {
+        errorEl.textContent = `⚠ ${msg}`;
+        errorEl.classList.add("visible");
+      }
+    } else {
+      input.classList.remove("invalid");
+      input.classList.add("valid");
+      if (errorEl) {
+        errorEl.textContent = "";
+        errorEl.classList.remove("visible");
+      }
+    }
+  };
+
+  input.addEventListener("input", validate);
+  input.addEventListener("blur", validate);
+}
+
+/**
+ * Returns true if ALL validated fields pass.
+ */
+function validateAllFields(fields) {
+  let allValid = true;
+  fields.forEach(({ id, field }) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    const errorEl = document.getElementById(`error-${field}`);
+    const msg = validators[field](input.value);
+    if (msg) {
+      allValid = false;
+      input.classList.add("invalid");
+      input.classList.remove("valid");
+      if (errorEl) {
+        errorEl.textContent = `⚠ ${msg}`;
+        errorEl.classList.add("visible");
+      }
+    }
+  });
+  return allValid;
+}
+
 export default function UserTable() {
   // --- CONTEXT & ACCESS CONTROL ---
   const { menuItemsFromAPI } = useContext(DataContext);
 
-  // Check write access (Ensure the path matches your routing configuration)
   const hasWriteAccess = useWriteAccess(
-    "/Incubation/Dashboard/TrainingManagementPage"
+    "/Incubation/Dashboard/TrainingManagementPage",
   );
 
   const userId = sessionStorage.getItem("userid");
@@ -159,7 +260,7 @@ export default function UserTable() {
 
     if (searchQuery.trim() !== "") {
       result = result.filter((user) =>
-        user.usersname.toLowerCase().includes(searchQuery.toLowerCase())
+        user.usersname.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     }
 
@@ -221,7 +322,8 @@ export default function UserTable() {
   }, [users, searchQuery, columnFilters]);
 
   const clearSearch = () => setSearchQuery("");
-  const handleIncubationSelect = (incubation) => setSelectedIncubation(incubation);
+  const handleIncubationSelect = (incubation) =>
+    setSelectedIncubation(incubation);
 
   const exportToCSV = () => {
     const exportData = filteredData.map((user, index) => ({
@@ -247,7 +349,7 @@ export default function UserTable() {
               ? `"${value}"`
               : value;
           })
-          .join(",")
+          .join(","),
       ),
     ].join("\n");
 
@@ -255,7 +357,10 @@ export default function UserTable() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `users_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute(
+      "download",
+      `users_${new Date().toISOString().slice(0, 10)}.csv`,
+    );
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -355,7 +460,8 @@ export default function UserTable() {
           </Box>
         ),
         renderCell: (params) => {
-          if (!params || !params.row) return <Chip label="Unknown Role" size="small" />;
+          if (!params || !params.row)
+            return <Chip label="Unknown Role" size="small" />;
           return (
             <Chip
               label={params.row.rolesname || "Unknown Role"}
@@ -366,36 +472,28 @@ export default function UserTable() {
         },
       },
       {
-        field: "usersadminstate",
+        field: "usersactivestate",
         headerName: "Status",
-        width: 120,
+        width: 150,
         sortable: true,
-        renderCell: (params) => {
-          if (!params?.row) return "-";
-          const status = params.row.usersadminstate;
-          const isActive = status === 1 || status === undefined;
-
-          return (
-            <Box sx={{ display: "flex", alignItems: "center" }}>
+        renderHeader: (params) => (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography>Status</Typography>
+            <Tooltip title="Filter">
               <IconButton
                 size="small"
-                sx={{
-                  mr: 0.5,
-                  color: isActive ? "success.main" : "error.main",
-                  cursor: "default",
-                }}
+                onClick={(e) => handleFilterClick(e, "usersactivestate")}
+                color={columnFilters.usersactivestate ? "primary" : "default"}
               >
-                {isActive ? (
-                  <CheckCircleIcon fontSize="small" />
-                ) : (
-                  <CancelIcon fontSize="small" />
-                )}
+                <FaFilter size={14} />
               </IconButton>
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                {isActive ? "Active" : "Inactive"}
-              </Typography>
-            </Box>
-          );
+            </Tooltip>
+          </Box>
+        ),
+        renderCell: (params) => {
+          const value = params.value;
+          const color = value === "Active" ? "green" : "red";
+          return <span style={{ fontWeight: 600, color }}>{value}</span>;
         },
       },
       {
@@ -522,7 +620,9 @@ export default function UserTable() {
                 const isCurrentlyEnabled = params.row.usersadminstate === 1;
 
                 const protectedRoles = ["Incubatees Admin", "Incubator Admin"];
-                const isProtectedRole = protectedRoles.includes(params.row.rolesname);
+                const isProtectedRole = protectedRoles.includes(
+                  params.row.rolesname,
+                );
 
                 return (
                   <Box>
@@ -538,8 +638,8 @@ export default function UserTable() {
                         isProtectedRole && isCurrentlyEnabled
                           ? "This role cannot be disabled"
                           : isCurrentlyEnabled
-                          ? "Disable User"
-                          : "Enable User"
+                            ? "Disable User"
+                            : "Enable User"
                       }
                     >
                       {isToggling === params.row.usersrecid ? (
@@ -557,7 +657,9 @@ export default function UserTable() {
                         isToggling === params.row.usersrecid ||
                         isDisabled
                       }
-                      title={isDisabled ? "Cannot edit disabled users" : "Edit User"}
+                      title={
+                        isDisabled ? "Cannot edit disabled users" : "Edit User"
+                      }
                       className={isDisabled ? "disabled" : ""}
                     >
                       {isUpdating === params.row.usersrecid ? (
@@ -573,7 +675,7 @@ export default function UserTable() {
           ]
         : []),
     ],
-    [isUpdating, isToggling, columnFilters, hasWriteAccess]
+    [isUpdating, isToggling, columnFilters, hasWriteAccess],
   );
 
   const rowsWithId = useMemo(() => {
@@ -622,7 +724,7 @@ export default function UserTable() {
   };
 
   const hasActiveFilters = Object.values(columnFilters).some(
-    (value) => value !== ""
+    (value) => value !== "",
   );
 
   const fetchUsers = async () => {
@@ -805,7 +907,7 @@ export default function UserTable() {
 
                   const mentorsRes = await api.post(
                     "/resources/generic/getmentordetails",
-                    mentorPayload
+                    mentorPayload,
                   );
 
                   if (
@@ -813,7 +915,7 @@ export default function UserTable() {
                     Array.isArray(mentorsRes.data.data)
                   ) {
                     const targetMentor = mentorsRes.data.data.find(
-                      (m) => m.mentordetsid === user.usersmentorid
+                      (m) => m.mentordetsid === user.usersmentorid,
                     );
 
                     if (targetMentor) {
@@ -856,7 +958,7 @@ export default function UserTable() {
                 } catch (mentorErr) {
                   console.error(
                     "Error updating linked mentor status:",
-                    mentorErr
+                    mentorErr,
                   );
                 }
               }
@@ -864,11 +966,13 @@ export default function UserTable() {
               Swal.fire(
                 "Success!",
                 `${user.usersname} has been ${actionText}d.`,
-                "success"
+                "success",
               );
               fetchUsers();
             } else {
-              throw new Error(res.data.message || `Failed to ${actionText} user`);
+              throw new Error(
+                res.data.message || `Failed to ${actionText} user`,
+              );
             }
           })
           .catch((err) => {
@@ -876,7 +980,7 @@ export default function UserTable() {
             Swal.fire(
               "Error",
               `Failed to ${actionText} ${user.usersname}: ${err.message}`,
-              "error"
+              "error",
             );
           })
           .finally(() => {
@@ -886,6 +990,9 @@ export default function UserTable() {
     });
   };
 
+  // ─────────────────────────────────────────────
+  // ADD USER
+  // ─────────────────────────────────────────────
   const handleAddUser = async () => {
     if (
       dropdownsLoading ||
@@ -902,7 +1009,11 @@ export default function UserTable() {
       });
 
       try {
-        await Promise.all([fetchRoles(), fetchIncubatees(), fetchIncubations()]);
+        await Promise.all([
+          fetchRoles(),
+          fetchIncubatees(),
+          fetchIncubations(),
+        ]);
         setDropdownsLoading(false);
         Swal.close();
       } catch (error) {
@@ -920,7 +1031,7 @@ export default function UserTable() {
           `<option value="" disabled selected>Select incubation</option>`,
           ...incubations.map(
             (incubation) =>
-              `<option value="${incubation.incubationsrecid}">${incubation.incubationsshortname}</option>`
+              `<option value="${incubation.incubationsrecid}">${incubation.incubationsshortname}</option>`,
           ),
         ].join("")
       : "";
@@ -928,50 +1039,52 @@ export default function UserTable() {
       `<option value="" disabled selected>Select incubatee</option>`,
       ...incubatees.map(
         (incubatee) =>
-          `<option value="${incubatee.incubateesrecid}">${incubatee.incubateesname}</option>`
+          `<option value="${incubatee.incubateesrecid}">${incubatee.incubateesname}</option>`,
       ),
     ].join("");
 
     const result = await Swal.fire({
       title: "Add New User",
       html: `
-      <div class="swal-form-container">
-        <div class="swal-form-row">
-          <input id="swal-name" class="swal2-input" placeholder="Name" required>
-        </div>
-        <div class="swal-form-row">
-          <input id="swal-email" class="swal2-input" placeholder="Email" required>
-        </div>
-        <div class="swal-form-row">
-          <input id="swal-password" type="password" class="swal2-input" placeholder="Password" required>
-        </div>
-        <div class="swal-form-row">
-          <select id="swal-role" class="swal2-select" required>
-            <option value="" disabled selected>Select a role</option>
-            ${roleOptions}
-          </select>
-        </div>
-        ${
-          canSelectIncubation
-            ? `
+        <div class="swal-form-container">
           <div class="swal-form-row">
-            <select id="swal-incubation" class="swal2-select" required>
-              ${incubationOptions}
+            <input id="swal-name" class="swal2-input" placeholder="Name *" required>
+            <div id="error-usersname" class="field-error"></div>
+          </div>
+          <div class="swal-form-row">
+            <input id="swal-email" class="swal2-input" placeholder="Email *" required>
+            <div id="error-usersemail" class="field-error"></div>
+          </div>
+          <div class="swal-form-row">
+            <input id="swal-password" type="password" class="swal2-input" placeholder="Password *" required>
+            <div id="error-userspassword" class="field-error"></div>
+          </div>
+          <div class="swal-form-row">
+            <select id="swal-role" class="swal2-select" required>
+              <option value="" disabled selected>Select a role</option>
+              ${roleOptions}
             </select>
           </div>
-          `
-            : ""
-        }
-        <div class="swal-form-row">
-          <select id="swal-incubatee" class="swal2-select" disabled>
-            ${incubateeOptions}
-          </select>
+          ${
+            canSelectIncubation
+              ? `<div class="swal-form-row">
+                   <select id="swal-incubation" class="swal2-select" required>
+                     ${incubationOptions}
+                   </select>
+                 </div>`
+              : ""
+          }
+          <div class="swal-form-row">
+            <select id="swal-incubatee" class="swal2-select" disabled>
+              ${incubateeOptions}
+            </select>
+          </div>
         </div>
-      </div>
-    `,
+      `,
       width: "600px",
       focusConfirm: false,
       showCancelButton: true,
+      // ── Validation on Confirm ──────────────────────────────────────────
       preConfirm: () => {
         const name = document.getElementById("swal-name");
         const email = document.getElementById("swal-email");
@@ -994,13 +1107,20 @@ export default function UserTable() {
           return false;
         }
 
-        if (
-          !name.value ||
-          !email.value ||
-          !password.value ||
-          !role.value ||
-          (canSelectIncubation && !incubation.value)
-        ) {
+        // Run all field validators and block submit if any fail
+        const fieldsToValidate = [
+          { id: "swal-name", field: "usersname" },
+          { id: "swal-email", field: "usersemail" },
+          { id: "swal-password", field: "userspassword" },
+        ];
+        if (!validateAllFields(fieldsToValidate)) {
+          Swal.showValidationMessage(
+            "Please fix the errors above before submitting.",
+          );
+          return false;
+        }
+
+        if (!role.value || (canSelectIncubation && !incubation.value)) {
           Swal.showValidationMessage("Please fill all required fields");
           return false;
         }
@@ -1013,22 +1133,27 @@ export default function UserTable() {
           usersincubationsrecid: canSelectIncubation
             ? incubation.value
             : selectedIncubation
-            ? selectedIncubation.incubationsrecid
-            : incUserid,
+              ? selectedIncubation.incubationsrecid
+              : incUserid,
           usersincubateesrecid: incubatee.value || null,
         };
       },
       didOpen: () => {
+        // Inject styles
         const style = document.createElement("style");
-        style.textContent = `
-        .swal-form-container { display: flex; flex-direction: column; gap: 12px; }
-        .swal-form-row { width: 100%; }
-        .swal2-input, .swal2-select { width: 100% !important; margin: 0 !important; }
-        .swal2-select { padding: 0.75em !important; }
-        select:disabled { background-color: #f8f9fa; cursor: not-allowed; opacity: 0.8; }
-      `;
+        style.id = "swal-validation-styles";
+        style.textContent = VALIDATION_STYLES;
         document.head.appendChild(style);
 
+        // Attach real-time validators
+        attachValidation(document.getElementById("swal-name"), "usersname");
+        attachValidation(document.getElementById("swal-email"), "usersemail");
+        attachValidation(
+          document.getElementById("swal-password"),
+          "userspassword",
+        );
+
+        // ── Dropdown logic ─────────────────────────────────────────────
         const roleSelect = document.getElementById("swal-role");
         const incubateeSelect = document.getElementById("swal-incubatee");
         const incubationSelect = canSelectIncubation
@@ -1048,7 +1173,7 @@ export default function UserTable() {
                 '<option value="" disabled selected>Select incubatee</option>',
                 ...(response.data.data || []).map(
                   (incubatee) =>
-                    `<option value="${incubatee.incubateesrecid}">${incubatee.incubateesname}</option>`
+                    `<option value="${incubatee.incubateesrecid}">${incubatee.incubateesname}</option>`,
                 ),
               ].join("");
               incubateeSelect.innerHTML = options;
@@ -1094,6 +1219,11 @@ export default function UserTable() {
         }
         toggleIncubateeDropdown();
       },
+      didDestroy: () => {
+        // Clean up injected styles
+        const style = document.getElementById("swal-validation-styles");
+        if (style) style.remove();
+      },
     });
 
     if (result.isConfirmed && result.value) {
@@ -1125,7 +1255,7 @@ export default function UserTable() {
           Swal.fire(
             "❌ Error",
             response.data.message || "Failed to add user",
-            "error"
+            "error",
           );
         }
       } catch (err) {
@@ -1139,19 +1269,21 @@ export default function UserTable() {
     }
   };
 
+  // ─────────────────────────────────────────────
+  // EDIT USER
+  // ─────────────────────────────────────────────
   const handleEdit = async (user) => {
     if (user.usersadminstate === 0) {
       Swal.fire(
         "Restricted",
         "Cannot edit a disabled user. Please enable the user first.",
-        "warning"
+        "warning",
       );
       return;
     }
 
     const userIncubationId = user.usersincubationsrecid || incUserid;
 
-    // 1. Fetch Roles specific to this user's incubation
     let specificRoles = [];
     try {
       const roleRes = await api.post("/resources/generic/getrolelist", {
@@ -1166,7 +1298,6 @@ export default function UserTable() {
       specificRoles = roles;
     }
 
-    // 2. Fetch Incubatees specific to this user's incubation
     let specificIncubatees = [];
     try {
       const incRes = await api.post("/resources/generic/getinclist", {
@@ -1181,13 +1312,12 @@ export default function UserTable() {
       specificIncubatees = incubatees;
     }
 
-    // 3. Fetch Incubations list if empty
     if (canSelectIncubation && incubations.length === 0) {
       try {
-        const incubationsRes = await api.post("/resources/generic/getincubationlist", {
-          userId: userId || null,
-          userIncId: "ALL",
-        });
+        const incubationsRes = await api.post(
+          "/resources/generic/getincubationlist",
+          { userId: userId || null, userIncId: "ALL" },
+        );
         if (incubationsRes.data.statusCode === 200) {
           setIncubations(incubationsRes.data.data || []);
         }
@@ -1196,16 +1326,16 @@ export default function UserTable() {
       }
     }
 
-    // --- Generate Role Options ---
-    // We create a Set of IDs to quickly check if the user's current role exists in the dropdown
     const existingRoleIds = new Set(specificRoles.map((r) => r.value));
     let finalRoles = [...specificRoles];
-
-    // If the user's role ID is not in the fetched list, add it manually using data from the row
-    if (user.usersrolesrecid && !existingRoleIds.has(String(user.usersrolesrecid)) && !existingRoleIds.has(Number(user.usersrolesrecid))) {
+    if (
+      user.usersrolesrecid &&
+      !existingRoleIds.has(String(user.usersrolesrecid)) &&
+      !existingRoleIds.has(Number(user.usersrolesrecid))
+    ) {
       finalRoles.unshift({
         value: user.usersrolesrecid,
-        text: user.rolesname || "Unknown Role", // Using the name from your JSON response
+        text: user.rolesname || "Unknown Role",
       });
     }
 
@@ -1214,37 +1344,36 @@ export default function UserTable() {
         (role) =>
           `<option value="${role.value}" ${
             user.usersrolesrecid == role.value ? "selected" : ""
-          }>${role.text}</option>`
+          }>${role.text}</option>`,
       )
       .join("");
 
-    // --- Generate Incubation Options ---
     const incubationOptions = canSelectIncubation
       ? [
-          `<option value="" ${
-            !user.usersincubationsrecid ? "selected" : ""
-          }>Select incubation</option>`,
+          `<option value="" ${!user.usersincubationsrecid ? "selected" : ""}>Select incubation</option>`,
           ...incubations.map(
             (incubation) =>
               `<option value="${incubation.incubationsrecid}" ${
                 user.usersincubationsrecid == incubation.incubationsrecid
                   ? "selected"
                   : ""
-              }>${incubation.incubationsshortname}</option>`
+              }>${incubation.incubationsshortname}</option>`,
           ),
         ].join("")
       : "";
 
-    // --- Generate Incubatee Options ---
-    // Check if the user's incubatee exists in the fetched list
-    const existingIncubateeIds = new Set(specificIncubatees.map((i) => i.incubateesrecid));
+    const existingIncubateeIds = new Set(
+      specificIncubatees.map((i) => i.incubateesrecid),
+    );
     let finalIncubatees = [...specificIncubatees];
-
-    // If not found, add it manually using data from the row
-    if (user.usersincubateesrecid && !existingIncubateeIds.has(String(user.usersincubateesrecid)) && !existingIncubateeIds.has(Number(user.usersincubateesrecid))) {
+    if (
+      user.usersincubateesrecid &&
+      !existingIncubateeIds.has(String(user.usersincubateesrecid)) &&
+      !existingIncubateeIds.has(Number(user.usersincubateesrecid))
+    ) {
       finalIncubatees.unshift({
         incubateesrecid: user.usersincubateesrecid,
-        incubateesname: user.incubateesname || "Unknown Incubatee", // Using the name from your JSON response
+        incubateesname: user.incubateesname || "Unknown Incubatee",
       });
     }
 
@@ -1255,66 +1384,59 @@ export default function UserTable() {
             user.usersincubateesrecid == incubatee.incubateesrecid
               ? "selected"
               : ""
-          }>${incubatee.incubateesname}</option>`
+          }>${incubatee.incubateesname}</option>`,
       )
       .join("");
 
     const incubateeOptions = [
-      `<option value="" ${
-        !user.usersincubateesrecid ? "selected" : ""
-      }>Select incubatee</option>`,
-      incubateeOptionsHTML
+      `<option value="" ${!user.usersincubateesrecid ? "selected" : ""}>Select incubatee</option>`,
+      incubateeOptionsHTML,
     ].join("");
-    
+
     const result = await Swal.fire({
       title: "Edit User",
       html: `
-      <div class="swal-form-container">
-        <div class="swal-form-row">
-          <input id="swal-name" class="swal2-input" placeholder="Name" value="${
-            user.usersname || ""
-          }">
-        </div>
-        <div class="swal-form-row">
-          <input id="swal-email" class="swal2-input" placeholder="Email" value="${
-            user.usersemail || ""
-          }">
-        </div>
-        <div class="swal-form-row">
-          <input id="swal-password" type="password" class="swal2-input" placeholder="Password" value="${
-            user.userspassword || ""
-          }" readonly>
-        </div>
-        <div class="swal-form-row">
-          <select id="swal-role" class="swal2-select">
-            ${roleOptionsHTML}
-          </select>
-        </div>
-        ${
-          canSelectIncubation
-            ? `
+        <div class="swal-form-container">
           <div class="swal-form-row">
-            <select id="swal-incubation" class="swal2-select">
-              ${incubationOptions}
+            <input id="swal-name" class="swal2-input" placeholder="Name *" value="${user.usersname || ""}">
+            <div id="error-usersname" class="field-error"></div>
+          </div>
+          <div class="swal-form-row">
+            <input id="swal-email" class="swal2-input" placeholder="Email *" value="${user.usersemail || ""}">
+            <div id="error-usersemail" class="field-error"></div>
+          </div>
+          <div class="swal-form-row">
+            <input id="swal-password" type="password" class="swal2-input" placeholder="Password" value="${user.userspassword || ""}" readonly>
+          </div>
+          <div class="swal-form-row">
+            <select id="swal-role" class="swal2-select">
+              ${roleOptionsHTML}
             </select>
           </div>
-          `
-            : ""
-        }
-        <div class="swal-form-row">
-          <select id="swal-incubatee" class="swal2-select" ${
-            !INCUBATEE_ROLE_IDS.includes(parseInt(user.usersrolesrecid))
-              ? "disabled"
+          ${
+            canSelectIncubation
+              ? `<div class="swal-form-row">
+                   <select id="swal-incubation" class="swal2-select">
+                     ${incubationOptions}
+                   </select>
+                 </div>`
               : ""
-          }>
-            ${incubateeOptions}
-          </select>
+          }
+          <div class="swal-form-row">
+            <select id="swal-incubatee" class="swal2-select" ${
+              !INCUBATEE_ROLE_IDS.includes(parseInt(user.usersrolesrecid))
+                ? "disabled"
+                : ""
+            }>
+              ${incubateeOptions}
+            </select>
+          </div>
         </div>
-      </div>
-    `,
+      `,
       width: "600px",
       focusConfirm: false,
       showCancelButton: true,
+      // ── Validation on Confirm ──────────────────────────────────────────
       preConfirm: () => {
         const name = document.getElementById("swal-name");
         const email = document.getElementById("swal-email");
@@ -1324,6 +1446,7 @@ export default function UserTable() {
           ? document.getElementById("swal-incubation")
           : null;
         const incubatee = document.getElementById("swal-incubatee");
+
         if (
           !name ||
           !email ||
@@ -1335,6 +1458,19 @@ export default function UserTable() {
           Swal.showValidationMessage("Form elements not found");
           return false;
         }
+
+        // Validate name and email (password is readonly in edit mode)
+        const fieldsToValidate = [
+          { id: "swal-name", field: "usersname" },
+          { id: "swal-email", field: "usersemail" },
+        ];
+        if (!validateAllFields(fieldsToValidate)) {
+          Swal.showValidationMessage(
+            "Please fix the errors above before submitting.",
+          );
+          return false;
+        }
+
         return {
           usersname: name.value,
           usersemail: email.value,
@@ -1343,24 +1479,24 @@ export default function UserTable() {
           usersincubationsrecid: canSelectIncubation
             ? incubation.value
             : selectedIncubation
-            ? selectedIncubation.incubationsrecid
-            : incUserid,
+              ? selectedIncubation.incubationsrecid
+              : incUserid,
           usersincubateesrecid: incubatee.value || null,
           usersmentorid: user.usersmentorid,
         };
       },
       didOpen: () => {
+        // Inject styles
         const style = document.createElement("style");
-        style.textContent = `
-        .swal-form-container { display: flex; flex-direction: column; gap: 12px; }
-        .swal-form-row { width: 100%; }
-        .swal2-input, .swal2-select { width: 100% !important; margin: 0 !important; }
-        .swal2-select { padding: 0.75em !important; }
-        input[readonly] { background-color: #f8f9fa; cursor: not-allowed; opacity: 0.8; }
-        select:disabled { background-color: #f8f9fa; cursor: not-allowed; opacity: 0.8; }
-      `;
+        style.id = "swal-validation-styles";
+        style.textContent = VALIDATION_STYLES;
         document.head.appendChild(style);
 
+        // Attach real-time validators (name + email only; password is readonly)
+        attachValidation(document.getElementById("swal-name"), "usersname");
+        attachValidation(document.getElementById("swal-email"), "usersemail");
+
+        // ── Dropdown logic ─────────────────────────────────────────────
         const roleSelect = document.getElementById("swal-role");
         const incubateeSelect = document.getElementById("swal-incubatee");
         const incubationSelect = canSelectIncubation
@@ -1382,36 +1518,21 @@ export default function UserTable() {
               incUserId: incubationId,
             });
             if (response.data.statusCode === 200) {
-              // Ensure we preserve the currently selected incubatee if it's not in the new list
-              const currentVal = incubateeSelect.value;
               const fetchedList = response.data.data || [];
-              
-              // Check if current value exists in new list
-              const exists = fetchedList.some(i => i.incubateesrecid == currentVal);
-              
               let optionsHtml = fetchedList
                 .map(
                   (incubatee) =>
-                    `<option value="${incubatee.incubateesrecid}">${incubatee.incubateesname}</option>`
+                    `<option value="${incubatee.incubateesrecid}">${incubatee.incubateesname}</option>`,
                 )
                 .join("");
-              
-              // If the previously selected incubatee is missing from the new fetch (e.g. changed incubation context),
-              // we can either clear it or try to keep it. 
-              // For this context, we just render the new list.
-              
               const currentUserIncubatee = user.usersincubateesrecid;
-
-                incubateeSelect.innerHTML = [
-                  '<option value="">Select incubatee</option>',
-                  optionsHtml
-                ].join("");
-
-                // 🔥 Restore selection AFTER rebuilding options
-                if (currentUserIncubatee) {
-                  incubateeSelect.value = currentUserIncubatee;
-                }
-              
+              incubateeSelect.innerHTML = [
+                '<option value="">Select incubatee</option>',
+                optionsHtml,
+              ].join("");
+              if (currentUserIncubatee) {
+                incubateeSelect.value = currentUserIncubatee;
+              }
             } else {
               incubateeSelect.innerHTML =
                 '<option value="" disabled>No incubatees found</option>';
@@ -1442,6 +1563,7 @@ export default function UserTable() {
             incubateeSelect.value = "";
           }
         };
+
         roleSelect.addEventListener("change", toggleIncubateeDropdown);
         if (incubationSelect) {
           incubationSelect.addEventListener("change", () => {
@@ -1453,6 +1575,10 @@ export default function UserTable() {
           });
         }
         toggleIncubateeDropdown();
+      },
+      didDestroy: () => {
+        const style = document.getElementById("swal-validation-styles");
+        if (style) style.remove();
       },
     });
 
@@ -1486,7 +1612,7 @@ export default function UserTable() {
           Swal.fire(
             "❌ Error",
             response.data.message || "Failed to update user",
-            "error"
+            "error",
           );
         }
       } catch (err) {
@@ -1499,7 +1625,7 @@ export default function UserTable() {
       }
     }
   };
-  
+
   return (
     <Box className="doccat-container" sx={{ p: 2 }}>
       <Box
@@ -1582,7 +1708,7 @@ export default function UserTable() {
         Showing {paginationModel.page * paginationModel.pageSize + 1} to{" "}
         {Math.min(
           (paginationModel.page + 1) * paginationModel.pageSize,
-          filteredData.length
+          filteredData.length,
         )}{" "}
         of {filteredData.length} entries
       </Box>
@@ -1626,14 +1752,8 @@ export default function UserTable() {
         open={Boolean(filterAnchorEl)}
         anchorEl={filterAnchorEl}
         onClose={handleFilterClose}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "left",
-        }}
-        transformOrigin={{
-          vertical: "top",
-          horizontal: "left",
-        }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        transformOrigin={{ vertical: "top", horizontal: "left" }}
       >
         <Card sx={{ minWidth: 280, maxWidth: 400 }}>
           <CardContent>
@@ -1650,13 +1770,21 @@ export default function UserTable() {
               fullWidth
               size="small"
               placeholder={`Enter ${
-                filterColumn === "usersname" && "name"
-              }${filterColumn === "usersemail" && "email"}${
-                filterColumn === "rolesname" && "role"
-              }${filterColumn === "userscreatedtime" && "created time"}${
-                filterColumn === "usersmodifiedtime" && "modified time"
-              }${filterColumn === "userscreatedby" && "created by"}${
-                filterColumn === "usersmodifiedby" && "modified by"
+                filterColumn === "usersname"
+                  ? "name"
+                  : filterColumn === "usersemail"
+                    ? "email"
+                    : filterColumn === "rolesname"
+                      ? "role"
+                      : filterColumn === "userscreatedtime"
+                        ? "created time"
+                        : filterColumn === "usersmodifiedtime"
+                          ? "modified time"
+                          : filterColumn === "userscreatedby"
+                            ? "created by"
+                            : filterColumn === "usersmodifiedby"
+                              ? "modified by"
+                              : ""
               }...`}
               value={columnFilters[filterColumn] || ""}
               onChange={(e) => handleFilterChange(filterColumn, e.target.value)}

@@ -439,39 +439,22 @@ export default function TrainingCatTable() {
         width: 300,
         sortable: true,
       },
-      {
-          field: "trainingcatadminstate",
-          headerName: "Status",
-          width: 120,
-          sortable: true,
-          renderCell: (params) => {
-            if (!params?.row) return "-";
-            const status = params.row.trainingcatadminstate;
-            const isActive = status === 1 || status === undefined;
+      // {
+      //   field: "trainingcatactivestate",
+      //   headerName: "Status",
+      //   width: 150,
+      //   sortable: true,
+      //   renderCell: (params) => {
+      //     const value = params.value; // "Active" or "Inactive"
+      //     const color = value === "Active" ? "green" : "red";
 
-            return (
-              <Box sx={{ display: "flex", alignItems: "center" }}>
-                <IconButton
-                  size="small"
-                  sx={{
-                    mr: 0.5,
-                    color: isActive ? "success.main" : "error.main",
-                    cursor: "default",
-                  }}
-                >
-                  {isActive ? (
-                    <CheckCircleIcon fontSize="small" />
-                  ) : (
-                    <CancelIcon fontSize="small" />
-                  )}
-                </IconButton>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {isActive ? "Active" : "Inactive"}
-                </Typography>
-              </Box>
-            );
-          },
-      },
+      //     return (
+      //       <span style={{ fontWeight: 600, color }}>
+      //         {value}
+      //       </span>
+      //     );
+      //   },
+      // },
       {
         field: "trainingcatcreatedby",
         headerName: "Created By",
@@ -528,7 +511,7 @@ export default function TrainingCatTable() {
                 return (
                   <Box>
                     {/* Toggle Status Button (ON/OFF Icon) */}
-                    <ActionButton
+                    {/* <ActionButton
                       color={isCurrentlyEnabled ? "on" : "off"}
                       onClick={() => handleToggleStatus(params.row)}
                       disabled={
@@ -545,7 +528,7 @@ export default function TrainingCatTable() {
                       ) : (
                         <ToggleOffIcon fontSize="small" />
                       )}
-                    </ActionButton>
+                    </ActionButton> */}
 
                     <ActionButton
                       color="edit"

@@ -138,25 +138,31 @@ export const sendMessage = async (messageData) => {
 
 export const getUsers = async (userId, incUserid) => {
   try {
-    // --- FIX: Use the secure 'api' instance ---
-    // The baseURL is already configured, so we only need the endpoint path.
-    // The interceptor will automatically add headers and encrypt the payload.
     const response = await api.post("/resources/generic/getusers", {
       userId: userId || null,
-      userIncId: parseInt(incUserid) || null, // Ensure incUserid is a number
+      userIncId: parseInt(incUserid) || null,
     });
 
-    // --- FIX: Check the response object returned by the api instance ---
     if (response.data.statusCode === 200) {
-      return response.data.data || []; // The interceptor decrypts, so response.data is the parsed JSON
+      const users = response.data.data || [];
+
+      // ✅ Filter only active users (usersadminstate === 1)
+      const activeUsers = users.filter(
+        (user) => Number(user.usersadminstate) === 1
+      );
+
+      return activeUsers;
     } else {
       throw new Error(response.data.message || "Failed to fetch users");
     }
   } catch (error) {
     console.error("Error fetching users:", error);
-    // --- FIX: Use consistent error handling with Swal ---
-    Swal.fire("❌ Error", error.message || "Failed to load users. Please try again.", "error");
-    throw error; // Re-throw the error for the calling component to handle
+    Swal.fire(
+      "❌ Error",
+      error.message || "Failed to load users. Please try again.",
+      "error"
+    );
+    throw error;
   }
 };
 
@@ -296,6 +302,49 @@ export const addBroadcastUser = async (
     return response.data;
   } catch (error) {
     console.error("Error adding user to broadcast list:", error);
+    throw error;
+  }
+};
+
+
+export const getUserAssociationList = async (userId, incUserid) => {
+  try {
+    // Using the endpoint and payload structure provided
+    const response = await api.post("/resources/generic/getuserasslist", {
+      userId: String(userId),
+      incUserId: String(incUserid),
+    });
+
+    // Assuming standard response structure based on your previous code
+    if (response.data.statusCode === 200) {
+      return response.data.data || [];
+    } else {
+      throw new Error(response.data.message || "Failed to fetch user associations");
+    }
+  } catch (error) {
+    console.error("Error fetching user associations:", error);
+    throw error;
+  }
+};
+
+
+export const getIncubateeRecipients = async (userId, userIncId) => {
+  try {
+    console.log("Fetching incubatee recipients for user:", userId, "inc:", userIncId);
+    
+    const response = await api.post("/resources/generic/getincubateerecipients", {
+      userId: String(userId),
+      userIncId: String(userIncId),
+    });
+
+    if (response.data.statusCode === 200) {
+      return response.data.data || [];
+    } else {
+      throw new Error(response.data.message || "Failed to fetch incubatee recipients");
+    }
+  } catch (error) {
+    console.error("Error fetching incubatee recipients:", error);
+    Swal.fire("❌ Error", error.message || "Failed to load recipients. Please try again.", "error");
     throw error;
   }
 };
