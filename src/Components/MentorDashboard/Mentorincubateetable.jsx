@@ -11,24 +11,15 @@ export default function MentorIncubateeTable() {
   const [incubateeList, setIncubateeList] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch incubatees assigned to the mentor
   useEffect(() => {
     const fetchIncubatees = async () => {
       try {
         setLoading(true);
         const response = await api.post(
           "/resources/generic/getincubateebymentor",
-          {
-            userId: userid,
-            userIncId: incuserid,
-          },
-          {
-            headers: {
-              userid: userid,
-            },
-          },
+          { userId: userid, userIncId: incuserid },
+          { headers: { userid: userid } },
         );
-
         if (response.data?.statusCode === 200) {
           setIncubateeList(response.data.data || []);
         }
@@ -38,20 +29,17 @@ export default function MentorIncubateeTable() {
         setLoading(false);
       }
     };
-
     fetchIncubatees();
   }, [userid, incuserid]);
 
-  // Stage colors mapping (same as CompanyTable)
   const stageColors = {
-    1: { backgroundColor: "#e0e7ff", color: "#4338ca" }, // Pre Seed
-    2: { backgroundColor: "#dbeafe", color: "#1e40af" }, // Seed
-    3: { backgroundColor: "#d1fae5", color: "#065f46" }, // Early
-    4: { backgroundColor: "#fef3c7", color: "#92400e" }, // Growth
-    5: { backgroundColor: "#ede9fe", color: "#5b21b6" }, // Expansion
+    1: { backgroundColor: "#e0e7ff", color: "#4338ca" },
+    2: { backgroundColor: "#dbeafe", color: "#1e40af" },
+    3: { backgroundColor: "#d1fae5", color: "#065f46" },
+    4: { backgroundColor: "#fef3c7", color: "#92400e" },
+    5: { backgroundColor: "#ede9fe", color: "#5b21b6" },
   };
 
-  // Define columns
   const columns = [
     {
       field: "incubateename",
@@ -91,9 +79,58 @@ export default function MentorIncubateeTable() {
       sortable: true,
       filterable: true,
     },
+    // ── New columns ──────────────────────────────────────────────────────────
+    {
+      field: "incubateesnooffounders",
+      headerName: "No. of Founders",
+      width: 140,
+      sortable: true,
+      filterable: true,
+    },
+    {
+      field: "incubateesdateofincubation",
+      headerName: "Date of Incubation",
+      width: 160,
+      sortable: true,
+      filterable: true,
+    },
+    {
+      field: "incubateesdateofincorporation",
+      headerName: "Date of Incorporation",
+      width: 170,
+      sortable: true,
+      filterable: true,
+    },
+    {
+      field: "incubateeswebsite",
+      headerName: "Website",
+      width: 180,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => {
+        const url = params?.row?.incubateeswebsite;
+        if (!url) return "—";
+        const href = url.startsWith("http") ? url : `https://${url}`;
+        return (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: "#1976d2",
+              textDecoration: "none",
+              fontWeight: 500,
+            }}
+            onMouseEnter={(e) => (e.target.style.textDecoration = "underline")}
+            onMouseLeave={(e) => (e.target.style.textDecoration = "none")}
+          >
+            {url.replace(/^https?:\/\//, "")}
+          </a>
+        );
+      },
+    },
   ];
 
-  // Add actions column for admins/relevant roles
   if ([1, 3, 7].includes(Number(roleid))) {
     columns.push({
       field: "actions",
@@ -119,7 +156,6 @@ export default function MentorIncubateeTable() {
     });
   }
 
-  // Dropdown filters
   const dropdownFilters = [
     {
       field: "incubateesstagelevel",
@@ -148,16 +184,18 @@ export default function MentorIncubateeTable() {
     },
   ];
 
-  // Export formatter
-  const handleExportData = (data) => {
-    return data.map((item) => ({
+  const handleExportData = (data) =>
+    data.map((item) => ({
       "Company Name": item.incubateename || "",
       "Short Name": item.incubateesshortname || "",
       "Field of Work": item.fieldofworkname || "",
       Stage: item.startupstagesname || "",
       Username: item.incubateeusername || "",
+      "No. of Founders": item.incubateesnooffounders ?? "",
+      "Date of Incubation": item.incubateesdateofincubation || "",
+      "Date of Incorporation": item.incubateesdateofincorporation || "",
+      Website: item.incubateeswebsite || "",
     }));
-  };
 
   return (
     <ReusableDataGrid
