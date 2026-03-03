@@ -260,21 +260,21 @@ export default function IncubateeTable() {
         type: "date",
         valueFormatter: (params) => formatDate(params.value),
       },
-      {
-        field: "incubateesadminstate",
-        headerName: "Status",
-        width: 120,
-        sortable: true,
-        renderCell: (params) =>
-          params?.row ? (
-            <Chip
-              label={params.value === 1 ? "Active" : "Inactive"}
-              color={params.value === 1 ? "success" : "default"}
-              variant={params.value === 1 ? "filled" : "outlined"}
-              size="small"
-            />
-          ) : null,
-      },
+      // {
+      //   field: "incubateesadminstate",
+      //   headerName: "Status",
+      //   width: 120,
+      //   sortable: true,
+      //   renderCell: (params) =>
+      //     params?.row ? (
+      //       <Chip
+      //         label={params.value === 1 ? "Active" : "Inactive"}
+      //         color={params.value === 1 ? "success" : "default"}
+      //         variant={params.value === 1 ? "filled" : "outlined"}
+      //         size="small"
+      //       />
+      //     ) : null,
+      // },
       {
         field: "actions",
         headerName: "Actions",

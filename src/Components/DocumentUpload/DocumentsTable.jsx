@@ -85,20 +85,20 @@ const ActionButton = styled(IconButton)(({ theme, color }) => ({
     color === "edit"
       ? theme.palette.primary.main
       : color === "on" // ON State -> Green
-      ? theme.palette.success.main
-      : color === "off" // OFF State -> Grey (The requested change)
-      ? theme.palette.grey[500]
-      : theme.palette.error.main, // Fallback / Delete
+        ? theme.palette.success.main
+        : color === "off" // OFF State -> Grey (The requested change)
+          ? theme.palette.grey[500]
+          : theme.palette.error.main, // Fallback / Delete
   color: "white",
   "&:hover": {
     backgroundColor:
       color === "edit"
         ? theme.palette.primary.dark
         : color === "on"
-        ? theme.palette.success.dark
-        : color === "off" // OFF Hover -> Darker Grey
-        ? theme.palette.grey[700]
-        : theme.palette.error.dark,
+          ? theme.palette.success.dark
+          : color === "off" // OFF Hover -> Darker Grey
+            ? theme.palette.grey[700]
+            : theme.palette.error.dark,
   },
   "&.disabled": {
     backgroundColor: theme.palette.grey[300],
@@ -228,7 +228,7 @@ const formatDate = (dateStr) => {
 };
 
 // Using forwardRef to allow parent components to access methods
-  const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {  
+const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {
   const hasWriteAccess = useWriteAccess("/Incubation/Dashboard/AddDocuments");
 
   const userId = sessionStorage.getItem("userid");
@@ -870,7 +870,10 @@ const formatDate = (dateStr) => {
         setPreviewContent(content);
       } catch (error) {
         console.error("Error previewing document:", error);
-        showToast(`Failed to preview: ${error.response?.data?.message || error.message}`, "error");
+        showToast(
+          `Failed to preview: ${error.response?.data?.message || error.message}`,
+          "error",
+        );
         setPreviewContent({
           type: "error",
           message: `Failed to load preview: ${error.response?.data?.message || error.message}`,
@@ -915,7 +918,7 @@ const formatDate = (dateStr) => {
         Swal.fire(
           "Restricted",
           "Cannot edit a disabled document. Please enable it first.",
-          "warning"
+          "warning",
         );
         return;
       }
@@ -1263,12 +1266,17 @@ const formatDate = (dateStr) => {
           fetchDocuments();
         } else {
           throw new Error(
-            data.response?.data?.message || data.message || "Failed to apply for document",
+            data.response?.data?.message ||
+              data.message ||
+              "Failed to apply for document",
           );
         }
       } catch (error) {
         console.error("Error applying for document:", error);
-        showToast(`Failed to apply: ${error.response?.data?.message || error.message}`, "error");
+        showToast(
+          `Failed to apply: ${error.response?.data?.message || error.message}`,
+          "error",
+        );
       } finally {
         setIsApplying((prev) => ({ ...prev, [documentId]: false }));
       }
@@ -1348,12 +1356,17 @@ const formatDate = (dateStr) => {
           fetchDocuments();
         } else {
           throw new Error(
-            data.response?.data?.message || data.message || "Failed to unmark document",
+            data.response?.data?.message ||
+              data.message ||
+              "Failed to unmark document",
           );
         }
       } catch (error) {
         console.error("Error unmarking document:", error);
-        showToast(`Failed to unmark: ${error.response?.data?.message || error.message}`, "error");
+        showToast(
+          `Failed to unmark: ${error.response?.data?.message || error.message}`,
+          "error",
+        );
       } finally {
         setIsUnmarking((prev) => ({ ...prev, [documentId]: false }));
       }
@@ -1412,11 +1425,11 @@ const formatDate = (dateStr) => {
           const bodyPayload = {
             userid: parseInt(userId) || 39,
             documentsrecid: doc.documentsrecid,
-            
+
             // IDs - Mapped from doc object
-            doccatid: doc.documentcatrecid, 
+            doccatid: doc.documentcatrecid,
             docsubcatid: doc.documentsubcatrecid,
-            
+
             // Core Document Details
             documentperiodicityrecid: doc.documentperiodicityrecid,
             documentname: doc.documentname,
@@ -1426,14 +1439,14 @@ const formatDate = (dateStr) => {
             documentreferencelink: doc.documentreferencelink || "",
             documentreferencevideo: doc.documentreferencevideo || "",
             documentapplicability: doc.documentapplicability || "",
-            
+
             // File Names
             sampleDocName: doc.documentsampledocname || "",
             templateDocName: doc.documenttemplatedocname || "",
-            
+
             // The field being updated (String "1" or "0" as per example)
-            documentadminstate: newState.toString(), 
-            
+            documentadminstate: newState.toString(),
+
             // Modifier
             documentmodifiedby: parseInt(userId) || 39,
           };
@@ -1450,12 +1463,12 @@ const formatDate = (dateStr) => {
                 Swal.fire(
                   "Success!",
                   `${doc.documentname} has been ${actionText}d.`,
-                  "success"
+                  "success",
                 );
                 refreshData();
               } else {
                 throw new Error(
-                  response.data.message || `Failed to ${actionText} document`
+                  response.data.message || `Failed to ${actionText} document`,
                 );
               }
             })
@@ -1464,7 +1477,7 @@ const formatDate = (dateStr) => {
               Swal.fire(
                 "Error",
                 `Failed to ${actionText} ${doc.documentname}: ${err.message}`,
-                "error"
+                "error",
               );
             })
             .finally(() => {
@@ -1473,7 +1486,7 @@ const formatDate = (dateStr) => {
         }
       });
     },
-    [userId, refreshData]
+    [userId, refreshData],
   );
   // =======================================================================
   // END: Handle Toggle Status
@@ -1644,23 +1657,23 @@ const formatDate = (dateStr) => {
             documentname: formData.documentname.trim(),
             documentdescription: formData.documentdescription.trim(),
             documentremarks: formData.documentremarks || "",
-            
+
             // File Names - ensure empty strings if null, to match example
             sampleDocName: subcatId
-              ? (formData.sampleDocName || originalFileNames.sample || "")
+              ? formData.sampleDocName || originalFileNames.sample || ""
               : "",
             templateDocName: subcatId
-              ? (formData.templateDocName || originalFileNames.template || "")
+              ? formData.templateDocName || originalFileNames.template || ""
               : "",
-            
+
             documentapplystatus: parseInt(formData.documentapplystatus),
             documentreferencelink: formData.documentreferencelink || "",
             documentreferencevideo: formData.documentreferencevideo || "",
             documentapplicability: formData.documentapplicability || "",
-            
+
             // Included to ensure state is preserved/updated
             documentadminstate: String(editDoc.documentadminstate),
-            
+
             documentmodifiedby: parseInt(userId) || 39,
           };
 
@@ -1961,23 +1974,14 @@ const formatDate = (dateStr) => {
           const value = params.value; // "Active" or "Inactive"
           const color = value === "Active" ? "green" : "red";
 
-          return (
-            <span style={{ fontWeight: 600, color }}>
-              {value}
-            </span>
-          );
+          return <span style={{ fontWeight: 600, color }}>{value}</span>;
         },
       },
       {
-        field: "documentapplystatus",
+        field: "documentapplystate",
         headerName: "Applicability",
         width: 120,
         sortable: true,
-        renderCell: (params) => {
-          if (!params || !params.row) return "-";
-          const status = params.row.documentapplystatus;
-          return status === 1 ? "Mandatory" : status === 0 ? "Selective" : "-";
-        },
       },
       {
         field: "documentreferencelink",
@@ -2227,7 +2231,7 @@ const formatDate = (dateStr) => {
                 disabled={
                   isSaving ||
                   isDeleting[params.row.documentsrecid] ||
-                  isDisabled || 
+                  isDisabled ||
                   isToggling === params.row.documentsrecid
                 }
                 title="Edit"
@@ -2407,7 +2411,11 @@ const formatDate = (dateStr) => {
       </Box>
 
       <ReusableDataGrid
-        data={documents}
+        data={
+          Number(roleid) === 4
+            ? documents.filter((doc) => doc.documentadminstate === 1)
+            : documents
+        }
         columns={columns}
         title=""
         enableExport={true}
@@ -3104,8 +3112,8 @@ const formatDate = (dateStr) => {
             {isToggling !== null
               ? "Updating status..."
               : editDoc
-              ? "Updating document..."
-              : "Creating documents..."}
+                ? "Updating document..."
+                : "Creating documents..."}
           </Typography>
         </Box>
       </StyledBackdrop>

@@ -471,31 +471,31 @@ export default function UserTable() {
           );
         },
       },
-      {
-        field: "usersactivestate",
-        headerName: "Status",
-        width: 150,
-        sortable: true,
-        renderHeader: (params) => (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography>Status</Typography>
-            <Tooltip title="Filter">
-              <IconButton
-                size="small"
-                onClick={(e) => handleFilterClick(e, "usersactivestate")}
-                color={columnFilters.usersactivestate ? "primary" : "default"}
-              >
-                <FaFilter size={14} />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        ),
-        renderCell: (params) => {
-          const value = params.value;
-          const color = value === "Active" ? "green" : "red";
-          return <span style={{ fontWeight: 600, color }}>{value}</span>;
-        },
-      },
+      // {
+      //   field: "usersactivestate",
+      //   headerName: "Status",
+      //   width: 150,
+      //   sortable: true,
+      //   renderHeader: (params) => (
+      //     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      //       <Typography>Status</Typography>
+      //       <Tooltip title="Filter">
+      //         <IconButton
+      //           size="small"
+      //           onClick={(e) => handleFilterClick(e, "usersactivestate")}
+      //           color={columnFilters.usersactivestate ? "primary" : "default"}
+      //         >
+      //           <FaFilter size={14} />
+      //         </IconButton>
+      //       </Tooltip>
+      //     </Box>
+      //   ),
+      //   renderCell: (params) => {
+      //     const value = params.value;
+      //     const color = value === "Active" ? "green" : "red";
+      //     return <span style={{ fontWeight: 600, color }}>{value}</span>;
+      //   },
+      // },
       {
         field: "userscreatedtime",
         headerName: "Created Time",

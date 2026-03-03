@@ -309,10 +309,16 @@ export default function TrainingAssociationTable() {
           },
         });
 
+        // FIX: Update both the numeric status AND the string label so UI
+        // reflects the change immediately without needing a page refresh.
         setAssociations((prev) =>
           prev.map((item) =>
             item.trainingassnrecid === id
-              ? { ...item, trainingassnstatus: 2 }
+              ? {
+                  ...item,
+                  trainingassnstatus: 2,
+                  trainingassnstatusstr: "In Progress",
+                }
               : item,
           ),
         );
@@ -343,14 +349,20 @@ export default function TrainingAssociationTable() {
             trainingassnmentorusersid: row.trainingassnmentorusersid,
             trainingassnadminstate: row.trainingassnadminstate,
             trainingassnmodifiedby: userId,
-            trainingassnstatus: 3, // Set status to Completed
+            trainingassnstatus: 3,
           },
         });
 
+        // FIX: Update both the numeric status AND the string label so UI
+        // reflects the change immediately without needing a page refresh.
         setAssociations((prev) =>
           prev.map((item) =>
             item.trainingassnrecid === id
-              ? { ...item, trainingassnstatus: 3 }
+              ? {
+                  ...item,
+                  trainingassnstatus: 3,
+                  trainingassnstatusstr: "Completed",
+                }
               : item,
           ),
         );
@@ -600,11 +612,7 @@ export default function TrainingAssociationTable() {
             color = "blue";
           }
 
-          return (
-            <span style={{ fontWeight: 600, color }}>
-              {value}
-            </span>
-          );
+          return <span style={{ fontWeight: 600, color }}>{value}</span>;
         },
       },
       {
@@ -645,14 +653,14 @@ export default function TrainingAssociationTable() {
         filterable: false,
         renderCell: (params) => {
           const row = params.row;
-          // Show only if user is the trainee and training is not already completed
+          // Show only if user is the trainee and training is In Progress (status 2)
           const isTrainee =
             String(userId) === String(row.trainingassnincusersid);
           const isNotCompleted = row.trainingassnstatus !== 3;
-          const isNotInProgress = row.trainingassnstatus !== 1;
+          const isNotAssigned = row.trainingassnstatus !== 1;
           const isLoading = statusLoading[row.trainingassnrecid];
 
-          if (isTrainee && isNotCompleted && isNotInProgress) {
+          if (isTrainee && isNotCompleted && isNotAssigned) {
             return (
               <Button
                 variant="contained"
@@ -660,7 +668,6 @@ export default function TrainingAssociationTable() {
                 size="small"
                 onClick={(e) => {
                   e.stopPropagation();
-                  // Add confirmation dialog here
                   Swal.fire({
                     title: "Are you sure?",
                     text: "You want to mark this training as completed.",

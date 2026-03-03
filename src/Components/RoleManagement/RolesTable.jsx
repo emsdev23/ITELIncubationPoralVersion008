@@ -75,7 +75,7 @@ export default function RolesTable() {
             "X-Module": "Roles Management",
             "X-Action": "Fetching Roles Details List",
           },
-        }
+        },
       );
 
       const result = response.data;
@@ -122,7 +122,7 @@ export default function RolesTable() {
                 "X-Module": "Role Management",
                 "X-Action": "Deleting Role",
               },
-            }
+            },
           )
           .then((response) => {
             const data = response.data;
@@ -130,7 +130,7 @@ export default function RolesTable() {
               Swal.fire(
                 "Deleted!",
                 `${role.rolesname} has been deleted successfully.`,
-                "success"
+                "success",
               );
               fetchRoles(); // Refresh the role list
             } else {
@@ -142,7 +142,7 @@ export default function RolesTable() {
             Swal.fire(
               "Error",
               `Failed to delete ${role.rolesname}: ${err.message}`,
-              "error"
+              "error",
             );
           })
           .finally(() => {
@@ -241,7 +241,7 @@ export default function RolesTable() {
                 "X-Module": "Role Management",
                 "X-Action": "Adding New Role",
               },
-            }
+            },
           )
           .then((response) => {
             const data = response.data;
@@ -252,7 +252,7 @@ export default function RolesTable() {
               Swal.fire(
                 "❌ Error",
                 data.message || "Failed to add role",
-                "error"
+                "error",
               );
             }
           })
@@ -265,13 +265,13 @@ export default function RolesTable() {
               Swal.fire(
                 "❌ CORS Error",
                 "Unable to connect to the server. This might be a CORS issue. Please contact your system administrator.",
-                "error"
+                "error",
               );
             } else {
               Swal.fire(
                 "❌ Error",
                 err.message || "Something went wrong",
-                "error"
+                "error",
               );
             }
           })
@@ -372,7 +372,7 @@ export default function RolesTable() {
                 "X-Module": "Role Management",
                 "X-Action": "Updating Role",
               },
-            }
+            },
           )
           .then((response) => {
             const data = response.data;
@@ -383,7 +383,7 @@ export default function RolesTable() {
               Swal.fire(
                 "❌ Error",
                 data.message || "Failed to update role",
-                "error"
+                "error",
               );
             }
           })
@@ -396,7 +396,7 @@ export default function RolesTable() {
               Swal.fire(
                 "❌ CORS Error",
                 "Unable to connect to the server. This might be a CORS issue. Please contact your system administrator.",
-                "error"
+                "error",
               );
             } else {
               Swal.fire("❌ Error", "Something went wrong", "error");
@@ -431,7 +431,7 @@ export default function RolesTable() {
         if (!params || !params.api || !params.row) return "1";
 
         const rowIndex = params.api.getRowIndexRelativeToVisibleRows(
-          params.row.id
+          params.row.id,
         );
         const pageSize = params.api.state.pagination.pageSize;
         const currentPage = params.api.state.pagination.page;
@@ -654,6 +654,7 @@ export default function RolesTable() {
             roleName={selectedRole.name}
             token={token}
             userId={userId}
+            onClose={() => setSelectedRole({ id: null, name: "" })}
           />
         </Box>
       )}
@@ -689,8 +690,8 @@ export default function RolesTable() {
               {isAdding
                 ? "Adding role..."
                 : isUpdating !== null
-                ? "Updating role..."
-                : "Deleting role..."}
+                  ? "Updating role..."
+                  : "Deleting role..."}
             </Typography>
           </Box>
         </Box>

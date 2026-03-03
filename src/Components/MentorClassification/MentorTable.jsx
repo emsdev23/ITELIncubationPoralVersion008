@@ -19,7 +19,7 @@ import ToggleOnIcon from "@mui/icons-material/ToggleOn";
 import ToggleOffIcon from "@mui/icons-material/ToggleOff";
 
 import ReusableDataGrid from "../Datafetching/ReusableDataGrid";
-import MentorForm from "./MentorForm";
+import MentorForm from "./Mentorform";
 
 // ─── Styled ───────────────────────────────────────────────────────────────────
 

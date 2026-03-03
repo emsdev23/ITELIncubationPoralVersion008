@@ -547,13 +547,25 @@ const MentorDashboard = () => {
               <>
                 {/* Mentor Profile Header */}
                 <div className="profile-header">
+                  {/* <div
+                    className={`profile-banner ${
+                      selectedMentor.mentordetsid % 2 === 0
+                        ? "banner-blue"
+                        : "banner-green"
+                    }`}
+                  ></div> */}
+
                   <div
                     className={`profile-banner ${
                       selectedMentor.mentordetsid % 2 === 0
                         ? "banner-blue"
                         : "banner-green"
                     }`}
-                  ></div>
+                  >
+                    <h2 className="banner-mentor-name">
+                      {selectedMentor.mentordetsname}
+                    </h2>
+                  </div>
 
                   <div className="profile-content">
                     <div className="profile-main">
@@ -609,9 +621,9 @@ const MentorDashboard = () => {
                       </div>
 
                       <div className="profile-text">
-                        <h2 className="profile-name">
+                        {/* <h2 className="profile-name">
                           {selectedMentor.mentordetsname}
-                        </h2>
+                        </h2> */}
                         {/* <p className="profile-designation">
                           {selectedMentor.mentordetsdesign}
                         </p> */}

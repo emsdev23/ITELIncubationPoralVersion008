@@ -135,7 +135,7 @@ const TrainingModule = forwardRef(
     const [error, setError] = useState(null);
 
     // State to store existing assignments for duplicate check
-    const [allAssignments, setAllAssignments] = useState([]); 
+    const [allAssignments, setAllAssignments] = useState([]);
 
     useImperativeHandle(ref, () => ({
       openAddModal,
@@ -144,37 +144,36 @@ const TrainingModule = forwardRef(
     // --- API CALLS ---
 
     const fetchTrainingList = useCallback(async () => {
-  setLoading(true);
-  setError(null);
+      setLoading(true);
+      setError(null);
 
-  try {
-    const response = await api.post(
-      "/resources/generic/gettraininglist",
-      {
-        userId: parseInt(userId) || 1,
-        userIncId: "ALL",
-      },
-      {
-        headers: {
-          "X-Module": "Training Management",
-          "X-Action": "Fetch Training List",
-        },
-      },
-    );
+      try {
+        const response = await api.post(
+          "/resources/generic/gettraininglist",
+          {
+            userId: parseInt(userId) || 1,
+            userIncId: "ALL",
+          },
+          {
+            headers: {
+              "X-Module": "Training Management",
+              "X-Action": "Fetch Training List",
+            },
+          },
+        );
 
-    const filteredTrainings = (response.data.data || []).filter(
-      (item) => item.trainingadminstate === 1
-    );
+        const filteredTrainings = (response.data.data || []).filter(
+          (item) => item.trainingadminstate === 1,
+        );
 
-    setTrainings(filteredTrainings);
-
-  } catch (err) {
-    console.error("Error fetching trainings:", err);
-    setError("Failed to load training list.");
-  } finally {
-    setLoading(false);
-  }
-}, [userId]);
+        setTrainings(filteredTrainings);
+      } catch (err) {
+        console.error("Error fetching trainings:", err);
+        setError("Failed to load training list.");
+      } finally {
+        setLoading(false);
+      }
+    }, [userId]);
     const fetchCategories = useCallback(async () => {
       try {
         const response = await api.post(
@@ -269,7 +268,7 @@ const TrainingModule = forwardRef(
           {
             userId: "ALL",
             userIncId: incUserid || "1",
-          }
+          },
         );
         setAllAssignments(response.data.data || []);
       } catch (err) {
@@ -378,15 +377,18 @@ const TrainingModule = forwardRef(
 
     // --- ASSIGNMENT LOGIC ---
 
-    const openAssignModal = useCallback((training) => {
-      setSelectedTrainingForAssign(training);
-      setAssignFormData({
-        trainingassnincusersid: "",
-      });
-      setIsAssignModalOpen(true);
-      // Fetch assignments when opening the modal to check for duplicates
-      fetchExistingAssignments();
-    }, [fetchExistingAssignments]);
+    const openAssignModal = useCallback(
+      (training) => {
+        setSelectedTrainingForAssign(training);
+        setAssignFormData({
+          trainingassnincusersid: "",
+        });
+        setIsAssignModalOpen(true);
+        // Fetch assignments when opening the modal to check for duplicates
+        fetchExistingAssignments();
+      },
+      [fetchExistingAssignments],
+    );
 
     const handleAssignChange = useCallback((e) => {
       const { name, value } = e.target;
@@ -405,8 +407,10 @@ const TrainingModule = forwardRef(
         // --- DUPLICATE CHECK LOGIC ---
         const isDuplicate = allAssignments.find(
           (assignment) =>
-            assignment.trainingassntrainingid == selectedTrainingForAssign.trainingid &&
-            assignment.trainingassnincusersid == assignFormData.trainingassnincusersid
+            assignment.trainingassntrainingid ==
+              selectedTrainingForAssign.trainingid &&
+            assignment.trainingassnincusersid ==
+              assignFormData.trainingassnincusersid,
         );
 
         if (isDuplicate) {
@@ -458,7 +462,7 @@ const TrainingModule = forwardRef(
               ) {
                 // Close dialog before success message to ensure visibility
                 setIsAssignModalOpen(false);
-                
+
                 Swal.fire(
                   "Assigned!",
                   "Training module assigned successfully.",
@@ -878,7 +882,7 @@ const TrainingModule = forwardRef(
       ];
 
       console.log("write access:", hasWriteAccess, "roleid:", roleid);
-      if (hasWriteAccess && Number(roleid) === 12) {
+      if (hasWriteAccess && Number(roleid) === 9) {
         baseColumns.push({
           field: "actions",
           headerName: "Assign",
@@ -981,7 +985,7 @@ const TrainingModule = forwardRef(
               sx={{
                 position: "absolute",
                 right: 8,
-            top: 8,
+                top: 8,
                 color: (theme) => theme.palette.grey[500],
               }}
               disabled={isSaving}

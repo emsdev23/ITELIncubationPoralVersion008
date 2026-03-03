@@ -985,3 +985,25 @@ body {
   outline: none;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
 }
+
+/* Name in top-right of banner */
+.banner-mentor-name {
+  position: absolute;
+  top: 50%;
+  right: 28px;
+  transform: translateY(-50%);
+  font-size: 35px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 55%;
+}
+
+/* Make sure banner is position: relative (add to existing .profile-banner) */
+.profile-banner {
+  position: relative; /* ADD this to existing rule */
+}

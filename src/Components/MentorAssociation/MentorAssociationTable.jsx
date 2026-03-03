@@ -157,7 +157,7 @@ export default function MentorAssociationTable() {
 
         // FILTER: Keep only users where usersrolesrecid is 12
         const mentorsOnly = rawData.filter(
-          (user) => user.usersrolesrecid === 12,
+          (user) => user.usersrolesrecid === 9,
         );
 
         setAllMentors(mentorsOnly);
@@ -959,14 +959,14 @@ export default function MentorAssociationTable() {
                                     {mentor.mentorname}
                                   </Typography>
                                   {hasWriteAccess && (
-                                  <Tooltip title="Edit associations">
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => startEditing(mentor)}
-                                    >
-                                      <FaEdit size={16} />
-                                    </IconButton>
-                                  </Tooltip>
+                                    <Tooltip title="Edit associations">
+                                      <IconButton
+                                        size="small"
+                                        onClick={() => startEditing(mentor)}
+                                      >
+                                        <FaEdit size={16} />
+                                      </IconButton>
+                                    </Tooltip>
                                   )}
                                 </Box>
                               </TableCell>
@@ -1008,28 +1008,28 @@ export default function MentorAssociationTable() {
                                   .mentorincassncreatedbyname || "N/A"}
                               </TableCell>
                               {hasWriteAccess && (
-                              <TableCell>
-                                <Tooltip title="Remove association">
-                                  <IconButton
-                                    size="small"
-                                    onClick={() =>
-                                      handleDelete(
-                                        mentor.associations[index]
-                                          .mentorincassnid,
-                                      )
-                                    }
-                                  >
-                                    {isDeleting ? (
-                                      <FaSpinner
-                                        className="spinner"
-                                        size={14}
-                                      />
-                                    ) : (
-                                      <FaTrash size={14} />
-                                    )}
-                                  </IconButton>
-                                </Tooltip>
-                              </TableCell>
+                                <TableCell>
+                                  <Tooltip title="Remove association">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() =>
+                                        handleDelete(
+                                          mentor.associations[index]
+                                            .mentorincassnid,
+                                        )
+                                      }
+                                    >
+                                      {isDeleting ? (
+                                        <FaSpinner
+                                          className="spinner"
+                                          size={14}
+                                        />
+                                      ) : (
+                                        <FaTrash size={14} />
+                                      )}
+                                    </IconButton>
+                                  </Tooltip>
+                                </TableCell>
                               )}
                             </>
                           ) : (

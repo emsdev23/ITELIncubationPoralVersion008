@@ -31,16 +31,16 @@ function MainDashboard() {
       {/* Main Content */}
       <main className={styles.main}>
         {roleid === "0" ? <IncubatorSelectorTable /> : ""}
-        {roleid === "12" ? <MentorDashboard /> : ""}
+        {roleid === "9" ? <MentorDashboard /> : ""}
 
         <br />
-        {roleid === "7" || roleid === "12" ? (
+        {roleid === "7" || roleid === "9" ? (
           ""
         ) : (
           <MetricCardDashboard stats={stats} />
         )}
 
-        {roleid === "7" || roleid === "12" ? (
+        {roleid === "7" || roleid === "9" ? (
           ""
         ) : (
           <div
@@ -59,7 +59,7 @@ function MainDashboard() {
 
         {/* Incubator Selector and Table Component */}
 
-        {roleid === "0" || roleid === "12" ? (
+        {roleid === "0" || roleid === "9" ? (
           ""
         ) : (
           <CompanyTable companyList={listOfIncubatees} />
@@ -68,10 +68,10 @@ function MainDashboard() {
         <br />
         <DDIDocumentUploadModal />
         <br />
-        {roleid === "12" ? "" : <DocumentTable />}
+        {roleid === "9" ? "" : <DocumentTable />}
 
         <br />
-        {roleid === "0" || roleid === "12" ? "" : <DDIDocumentsTable />}
+        {roleid === "0" || roleid === "9" ? "" : <DDIDocumentsTable />}
       </main>
     </div>
   );

@@ -485,7 +485,9 @@
   font-size: 0.9rem;
   box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
   z-index: 10000;
-  animation: slideDownFade 0.4s ease-out, pulse 2s infinite;
+  animation:
+    slideDownFade 0.4s ease-out,
+    pulse 2s infinite;
 }
 
 /* Animations */

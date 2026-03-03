@@ -276,7 +276,7 @@ const Navbar = () => {
   const isDueDeeligence = Number(roleid) === 7 || Number(sessionRoleid) === 7;
   const SuperAdmin = Number(roleid) === 0 || Number(sessionRoleid) === 0;
   const isIncubatee = Number(roleid) === 4 || Number(sessionRoleid) === 4;
-  const isMentor = Number(roleid) === 12 || Number(sessionRoleid) === 12;
+  const isMentor = Number(roleid) === 9 || Number(sessionRoleid) === 9;
 
   const logedinProfile =
     roleid === "1"
@@ -529,7 +529,7 @@ const Navbar = () => {
             <p>
               {Number(roleid) === 1
                 ? "Admin Dashboard"
-                : Number(roleid) === 12
+                : Number(roleid) === 9
                   ? "Mentor Dashboard"
                   : "Startup Management Dashboard"}
             </p>

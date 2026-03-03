@@ -80,7 +80,7 @@ function AppContent() {
             <Route
               path="/Incubation/Dashboard"
               element={
-                <ProtectedRoute allowedRoles={[0, 1, 3, 7, 12]}>
+                <ProtectedRoute allowedRoles={[0, 1, 3, 7, 9]}>
                   <MainDashboard />
                 </ProtectedRoute>
               }
@@ -231,7 +231,6 @@ function AppContent() {
                   <IncubateeTable />
                 </ProtectedRoute>
               }
-              
             />
 
             <Route path="/reset-password" element={<ResetPassword />} />

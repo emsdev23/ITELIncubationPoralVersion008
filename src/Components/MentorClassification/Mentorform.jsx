@@ -33,7 +33,7 @@ import {
   validateFullForm,
   STEP_FIELDS,
   emptyForm,
-} from "./mentorValidations";
+} from "./Mentorvalidations";
 
 // ─── Styled ───────────────────────────────────────────────────────────────────
 

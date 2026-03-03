@@ -118,7 +118,7 @@ const LoginForm = () => {
           showConfirmButton: false,
         });
         setTimeout(() => navigate("/startup/Dashboard"), 1000);
-      } else if (roleid === "12") {
+      } else if (roleid === "9") {
         Swal.fire({
           icon: "success",
           title: "Welcome Mentor!",

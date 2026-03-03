@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useContext } from "react";
 import { FaSpinner, FaSave, FaTimes } from "react-icons/fa";
 import { Download } from "lucide-react";
 import Swal from "sweetalert2";
@@ -7,6 +7,7 @@ import ReusableDataGrid from "../Datafetching/ReusableDataGrid"; // Import the r
 import api from "../Datafetching/api";
 // Material UI imports
 import { IPAdress } from "../Datafetching/IPAdrees";
+import { DataContext } from "../Datafetching/DataProvider";
 import {
   Button,
   Box,
@@ -27,7 +28,14 @@ const PermissionLabel = styled(Box)(({ theme, enabled }) => ({
   fontWeight: 500,
 }));
 
-export default function RoleAppList({ roleId, roleName, token, userId }) {
+export default function RoleAppList({
+  roleId,
+  roleName,
+  token,
+  userId,
+  onClose,
+  onSaveSuccess,
+}) {
   const API_BASE_URL = IPAdress;
 
   const [apps, setApps] = useState([]);
@@ -35,6 +43,7 @@ export default function RoleAppList({ roleId, roleName, token, userId }) {
   const [error, setError] = useState(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const { fetchMenuItems } = useContext(DataContext);
 
   // Fetch applications whenever the roleId prop changes
   // Fetch logs function
@@ -56,7 +65,7 @@ export default function RoleAppList({ roleId, roleName, token, userId }) {
             Authorization: `Bearer ${token}`,
             userid: userId || "1",
           },
-        }
+        },
       );
 
       const result = response.data;
@@ -123,12 +132,10 @@ export default function RoleAppList({ roleId, roleName, token, userId }) {
   };
 
   // Save changes to the API
-  const saveChanges = () => {
+  const saveChanges = async () => {
     setIsSaving(true);
 
-    // Create promises for each app update
     const updatePromises = apps.map((app) => {
-      // Use api.post instead of fetch with URLSearchParams
       return api.post(
         "/addAppsInRoles",
         {
@@ -136,7 +143,7 @@ export default function RoleAppList({ roleId, roleName, token, userId }) {
           appsinrolesguiid: app.appsinrolesguiid,
           appsreadaccess: app.isAssigned ? app.appsreadaccess : 0,
           appswriteaccess: app.isAssigned ? app.appswriteaccess : 0,
-          appsinrolesadminstate: "1", // Default to enabled
+          appsinrolesadminstate: "1",
           appsinrolescreatedby: userId || "system",
           appsinrolesmodifiedby: userId || "system",
         },
@@ -145,54 +152,50 @@ export default function RoleAppList({ roleId, roleName, token, userId }) {
             "X-Module": "Role Management",
             "X-Action": "Updating App Permissions",
           },
-        }
+        },
       );
     });
 
-    Promise.all(updatePromises)
-      .then((responses) => {
-        // The response data is already decrypted by the interceptor
-        console.log("Update responses:", responses);
+    try {
+      const responses = await Promise.all(updatePromises);
+      console.log("Update responses:", responses);
 
-        // Check if all responses were successful
-        const allSuccessful = responses.every(
-          (response) => response.data.statusCode === 200
-        );
+      const allSuccessful = responses.every(
+        (response) => response.data.statusCode === 200,
+      );
 
-        if (allSuccessful) {
-          setHasChanges(false);
-          // Show success message with SweetAlert2
-          Swal.fire({
-            icon: "success",
-            title: "Success!",
-            text: "Applications and permissions updated successfully!",
-            confirmButtonColor: "#3085d6",
-            confirmButtonText: "OK",
-          });
-        } else {
-          throw new Error("Some updates failed");
-        }
-      })
-      .catch((err) => {
-        console.error("Error updating permissions:", err);
-        // Show error message with SweetAlert2
+      if (allSuccessful) {
+        setHasChanges(false);
+        if (onSaveSuccess) onSaveSuccess();
+        await fetchMenuItems(); // re-fetches sidebar instantly
         Swal.fire({
-          icon: "error",
-          title: "Error!",
-          text: "Failed to update applications and permissions. Please try again.",
-          confirmButtonColor: "#d33",
+          icon: "success",
+          title: "Success!",
+          text: "Applications and permissions updated successfully!",
+          confirmButtonColor: "#3085d6",
           confirmButtonText: "OK",
         });
-      })
-      .finally(() => {
-        setIsSaving(false);
+      } else {
+        throw new Error("Some updates failed");
+      }
+    } catch (err) {
+      console.error("Error updating permissions:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Error!",
+        text: "Failed to update applications and permissions. Please try again.",
+        confirmButtonColor: "#d33",
+        confirmButtonText: "OK",
       });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Cancel changes
   const cancelChanges = () => {
-    // Reset to original data by refetching
-    Applications();
+    Applications(); // reset data
+    if (onClose) onClose(); // close the tab
   };
 
   // Define columns for ReusableDataGrid
@@ -207,7 +210,7 @@ export default function RoleAppList({ roleId, roleName, token, userId }) {
         if (!params || !params.api || !params.row) return "1";
 
         const rowIndex = params.api.getRowIndexRelativeToVisibleRows(
-          params.row.id
+          params.row.id,
         );
         const pageSize = params.api.state.pagination.pageSize;
         const currentPage = params.api.state.pagination.page;
@@ -276,7 +279,7 @@ export default function RoleAppList({ roleId, roleName, token, userId }) {
               handlePermissionChange(
                 params.row.appId,
                 "appsreadaccess",
-                e.target.checked
+                e.target.checked,
               )
             }
             disabled={!params.row.isAssigned}
@@ -300,7 +303,7 @@ export default function RoleAppList({ roleId, roleName, token, userId }) {
               handlePermissionChange(
                 params.row.appId,
                 "appswriteaccess",
-                e.target.checked
+                e.target.checked,
               )
             }
             disabled={!params.row.isAssigned}
@@ -343,8 +346,39 @@ export default function RoleAppList({ roleId, roleName, token, userId }) {
         <Typography variant="h5">
           📱 Applications for Role: {roleName}
         </Typography>
+        {/* Sticky Save/Cancel Bar */}
         {hasChanges && (
-          <>
+          <Box
+            sx={{
+              position: "fixed",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 1200,
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              gap: 2,
+              px: 4,
+              py: 2,
+              backgroundColor: "rgba(255, 255, 255, 0.95)",
+              backdropFilter: "blur(8px)",
+              boxShadow: "0 -4px 20px rgba(0,0,0,0.12)",
+              borderTop: "1px solid #e2e8f0",
+            }}
+          >
+            <Typography variant="body2" sx={{ color: "#64748b", mr: "auto" }}>
+              ⚠️ You have unsaved changes
+            </Typography>
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<FaTimes />}
+              onClick={cancelChanges}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
             <Button
               variant="contained"
               color="success"
@@ -360,16 +394,7 @@ export default function RoleAppList({ roleId, roleName, token, userId }) {
             >
               {isSaving ? "Saving..." : "Save Changes"}
             </Button>
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<FaTimes />}
-              onClick={cancelChanges}
-              disabled={isSaving}
-            >
-              Cancel
-            </Button>
-          </>
+          </Box>
         )}
       </Box>
 
