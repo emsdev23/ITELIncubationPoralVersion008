@@ -7,8 +7,10 @@ import {
   getChatTypes,
 } from "./chatService";
 import api from "../Datafetching/api";
+import { useNavigate } from "react-router-dom";
 
 const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
+  const navigate = useNavigate();
   const ROLE_IDS = {
     SUPERADMIN: 1,
     ADMIN: 2,
@@ -16,7 +18,7 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
     INCUBATEE_ADMIN: 4,
     INCUBATEE_MANAGER: 5,
     INCUBATEE_OPERATOR: 6,
-    MENTOR: 12, 
+    MENTOR: 9,
   };
 
   const [chatType, setChatType] = useState("");
@@ -24,7 +26,7 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [users, setUsers] = useState([]);
   const [chatTypes, setChatTypes] = useState([]);
-  
+
   // State for Mentor specific POCs
   const [mentorPocs, setMentorPocs] = useState([]);
   const [mentorPocsLoading, setMentorPocsLoading] = useState(false);
@@ -59,12 +61,12 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
   // =======================================================================
   // NEW: Fetch Mentor POCs
   // =======================================================================
-    const fetchMentorPocs = async () => {
+  const fetchMentorPocs = async () => {
     try {
       setMentorPocsLoading(true);
       const response = await api.post("/resources/generic/getmentorspoc", {
         userId: String(currentUser.id),
-        userIncId: String(currentUser.incUserid)
+        userIncId: String(currentUser.incUserid),
       });
 
       const apiData = response.data;
@@ -73,7 +75,7 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
       // Check if the response is directly an array
       if (Array.isArray(apiData)) {
         finalData = apiData;
-      } 
+      }
       // Check if the response is an object containing a "data" array
       else if (apiData && Array.isArray(apiData.data)) {
         finalData = apiData.data;
@@ -83,7 +85,7 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
     } catch (error) {
       console.error("Error fetching mentor POCs:", error);
       // Ensure it is always an array, even on error
-      setMentorPocs([]); 
+      setMentorPocs([]);
     } finally {
       setMentorPocsLoading(false);
     }
@@ -103,7 +105,7 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
           {
             value: 1,
             // Updated text as requested: "Incubator <--> Incubatee"
-            text: "Incubator <--> Incubatee", 
+            text: "Incubator <--> Incubatee",
             chattypedescription: "incubator to incubatee",
           },
           {
@@ -181,7 +183,7 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
   // =======================================================================
   // MODIFICATION: Filter users based on Role ID logic (Mentor Added)
   // =======================================================================
-    const getVisibleUsers = () => {
+  const getVisibleUsers = () => {
     const currentRoleId = parseInt(currentUser.roleid);
 
     // --- MENTOR LOGIC ---
@@ -191,24 +193,26 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
       // 1. Get users with Role ID 1 (Superadmin/Incubator Admin) from the main user list
       const role1Users = users.filter((user) => {
         const userRoleId = parseInt(user.usersrolesrecid);
-        return userRoleId === ROLE_IDS.SUPERADMIN; 
+        return userRoleId === ROLE_IDS.SUPERADMIN;
       });
 
       combinedList.push(...role1Users);
 
       // 2. Map and add users from the 'getmentorspoc' API response
       // Added safety check (Array.isArray) to prevent crash
-      const mappedPocs = (Array.isArray(mentorPocs) ? mentorPocs : []).map((poc) => ({
-        usersrecid: poc.mentorincassnincuserrecid,
-        usersname: poc.usersname,
-        rolesname: "Incubatee Admin", 
-        usersrolesrecid: "MENTOR_POC",
-      }));
+      const mappedPocs = (Array.isArray(mentorPocs) ? mentorPocs : []).map(
+        (poc) => ({
+          usersrecid: poc.mentorincassnincuserrecid,
+          usersname: poc.usersname,
+          rolesname: "Incubatee Admin",
+          usersrolesrecid: "MENTOR_POC",
+        }),
+      );
 
       // Combine and remove duplicates
       const allUsers = [...combinedList, ...mappedPocs];
       const uniqueUsers = Array.from(
-        new Map(allUsers.map((item) => [item.usersrecid, item])).values()
+        new Map(allUsers.map((item) => [item.usersrecid, item])).values(),
       );
 
       return uniqueUsers;
@@ -218,7 +222,9 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
     if (currentRoleId === ROLE_IDS.INCUBATEE_ADMIN) {
       return users.filter((user) => {
         const userRoleId = parseInt(user.usersrolesrecid);
-        return userRoleId === ROLE_IDS.SUPERADMIN || userRoleId === ROLE_IDS.ADMIN;
+        return (
+          userRoleId === ROLE_IDS.SUPERADMIN || userRoleId === ROLE_IDS.ADMIN
+        );
       });
     }
 
@@ -231,13 +237,17 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
   const handleSelectAll = () => {
     const visibleUsers = getVisibleUsers();
     const visibleUserIds = visibleUsers.map((u) => u.usersrecid.toString());
-    
+
     // Check if all visible users are currently selected
-    const allVisibleSelected = visibleUserIds.every((id) => selectedUsers.includes(id));
+    const allVisibleSelected = visibleUserIds.every((id) =>
+      selectedUsers.includes(id),
+    );
 
     if (allVisibleSelected) {
       // If all visible users are selected, deselect only the visible ones
-      setSelectedUsers((prev) => prev.filter((id) => !visibleUserIds.includes(id)));
+      setSelectedUsers((prev) =>
+        prev.filter((id) => !visibleUserIds.includes(id)),
+      );
     } else {
       // Otherwise, select all visible users
       setSelectedUsers((prev) => {
@@ -305,6 +315,9 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
         const newChat = await createChat(chatData);
         onChatCreated(newChat);
       }
+
+      // ✅ Navigate after successful creation
+      navigate("/Incubation/Dashboard/Chats");
     } catch (error) {
       console.error("Error creating chat:", error);
       setError(`Failed to create chat: ${error.message}`);
@@ -375,31 +388,33 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
   const getSelectedUsersDisplay = () => {
     if (selectedUsers.length === 0)
       return isMultiSelect() ? "Select recipients" : "Select recipient";
-      
+
     const visibleUsers = getVisibleUsers();
-    const visibleIds = visibleUsers.map(u => u.usersrecid.toString());
-    
+    const visibleIds = visibleUsers.map((u) => u.usersrecid.toString());
+
     // Helper to find name in either list
     const findUserName = (idStr) => {
       // Check main users list
       const mainUser = users.find((u) => u.usersrecid.toString() === idStr);
       if (mainUser) return mainUser.usersname;
-      
+
       // Check mentor POCs list
-      const pocUser = mentorPocs.find((p) => p.mentorincassnincuserrecid.toString() === idStr);
+      const pocUser = mentorPocs.find(
+        (p) => p.mentorincassnincuserrecid.toString() === idStr,
+      );
       if (pocUser) return pocUser.usersname;
-      
+
       return null;
     };
 
     const selectedNames = selectedUsers
       .map((userId) => findUserName(userId))
       .filter(Boolean);
-      
+
     if (selectedNames.length === 0)
       return isMultiSelect() ? "Select recipients" : "Select recipient";
     if (selectedNames.length === 1) return selectedNames[0];
-    
+
     // Check if all visible users are selected
     if (
       visibleIds.length > 0 &&
@@ -507,19 +522,31 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
                         type="checkbox"
                         checked={(() => {
                           const visibleUsers = getVisibleUsers();
-                          const visibleIds = visibleUsers.map(u => u.usersrecid.toString());
-                          return visibleUsers.length > 0 && visibleIds.every(id => selectedUsers.includes(id));
+                          const visibleIds = visibleUsers.map((u) =>
+                            u.usersrecid.toString(),
+                          );
+                          return (
+                            visibleUsers.length > 0 &&
+                            visibleIds.every((id) => selectedUsers.includes(id))
+                          );
                         })()}
                         onChange={(e) => handleSelectAllCheckboxChange(e)}
                         onClick={(e) => e.stopPropagation()}
                       />
                       <div className="user-info">
                         <span className="user-name">
-                           {(() => {
-                              const visibleUsers = getVisibleUsers();
-                              const visibleIds = visibleUsers.map(u => u.usersrecid.toString());
-                              return visibleUsers.length > 0 && visibleIds.every(id => selectedUsers.includes(id)) ? "Deselect All" : "Select All";
-                           })()}
+                          {(() => {
+                            const visibleUsers = getVisibleUsers();
+                            const visibleIds = visibleUsers.map((u) =>
+                              u.usersrecid.toString(),
+                            );
+                            return visibleUsers.length > 0 &&
+                              visibleIds.every((id) =>
+                                selectedUsers.includes(id),
+                              )
+                              ? "Deselect All"
+                              : "Select All";
+                          })()}
                         </span>
                       </div>
                     </div>
@@ -550,11 +577,16 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
                       </div>
                     </div>
                   ))}
-                  {getVisibleUsers().length === 0 && !usersLoading && !mentorPocsLoading && (
-                     <div className="dropdown-item" style={{cursor: 'default', color: '#888'}}>
-                       No available users found.
-                     </div>
-                  )}
+                  {getVisibleUsers().length === 0 &&
+                    !usersLoading &&
+                    !mentorPocsLoading && (
+                      <div
+                        className="dropdown-item"
+                        style={{ cursor: "default", color: "#888" }}
+                      >
+                        No available users found.
+                      </div>
+                    )}
                 </div>
               )}
             </div>
