@@ -1965,18 +1965,22 @@ const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {
         width: 120,
         sortable: true,
       },
-      {
-        field: "documentactivestate",
-        headerName: "Status",
-        width: 150,
-        sortable: true,
-        renderCell: (params) => {
-          const value = params.value; // "Active" or "Inactive"
-          const color = value === "Active" ? "green" : "red";
-
-          return <span style={{ fontWeight: 600, color }}>{value}</span>;
-        },
-      },
+      // ✅ Only show Status column for role ID 1
+      ...(Number(roleid) === 1
+        ? [
+            {
+              field: "documentactivestate",
+              headerName: "Status",
+              width: 150,
+              sortable: true,
+              renderCell: (params) => {
+                const value = params.value;
+                const color = value === "Active" ? "green" : "red";
+                return <span style={{ fontWeight: 600, color }}>{value}</span>;
+              },
+            },
+          ]
+        : []),
       {
         field: "documentapplystate",
         headerName: "Applicability",
