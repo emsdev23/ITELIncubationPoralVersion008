@@ -621,14 +621,14 @@ export default function TrainingAssociationTable() {
         width: 150,
         sortable: true,
       },
-      {
-        field: "createdname",
-        headerName: "Created By",
-        width: 150,
-        sortable: true,
-        valueGetter: (params) =>
-          params.row.createdname || params.row.trainingassncreatedby,
-      },
+      // {
+      //   field: "createdname",
+      //   headerName: "Created By",
+      //   width: 150,
+      //   sortable: true,
+      //   valueGetter: (params) =>
+      //     params.row.createdname || params.row.trainingassncreatedby,
+      // },
       {
         field: "trainingassncreatedtime",
         headerName: "Created Time",
@@ -636,14 +636,6 @@ export default function TrainingAssociationTable() {
         sortable: true,
         type: "date",
         valueFormatter: (params) => formatDate(params.value),
-      },
-      {
-        field: "modifiedname",
-        headerName: "Modified By",
-        width: 150,
-        sortable: true,
-        valueGetter: (params) =>
-          params.row.modifiedname || params.row.trainingassnmodifiedby,
       },
       {
         field: "traineeActions",
@@ -692,6 +684,15 @@ export default function TrainingAssociationTable() {
           return null;
         },
       },
+      {
+        field: "modifiedname",
+        headerName: "Modified By",
+        width: 150,
+        sortable: true,
+        valueGetter: (params) =>
+          params.row.modifiedname || params.row.trainingassnmodifiedby,
+      },
+
       {
         field: "trainingassnmodifiedtime",
         headerName: "Modified Time",
