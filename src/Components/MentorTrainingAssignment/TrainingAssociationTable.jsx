@@ -50,20 +50,20 @@ const ActionButton = styled(IconButton)(({ theme, color }) => ({
     color === "edit"
       ? theme.palette.primary.main
       : color === "delete"
-      ? theme.palette.error.main
-      : color === "chat"
-      ? theme.palette.info.main
-      : theme.palette.grey[500],
+        ? theme.palette.error.main
+        : color === "chat"
+          ? theme.palette.info.main
+          : theme.palette.grey[500],
   color: "white",
   "&:hover": {
     backgroundColor:
       color === "edit"
         ? theme.palette.primary.dark
         : color === "delete"
-        ? theme.palette.error.dark
-        : color === "chat"
-        ? theme.palette.info.dark
-        : theme.palette.grey[700],
+          ? theme.palette.error.dark
+          : color === "chat"
+            ? theme.palette.info.dark
+            : theme.palette.grey[700],
   },
 }));
 
@@ -83,7 +83,7 @@ const formatDate = (dateStr) => {
     const minute = dateStr.substring(10, 12);
     const second = dateStr.substring(12, 14);
     const formattedDate = new Date(
-      `${year}-${month}-${day}T${hour}:${minute}:${second}`
+      `${year}-${month}-${day}T${hour}:${minute}:${second}`,
     );
     return formattedDate.toLocaleString("en-US", {
       year: "numeric",
@@ -107,7 +107,7 @@ const TrainingAssociationTable = forwardRef(
     const incUserid = sessionStorage.getItem("incuserid");
 
     const hasWriteAccess = useWriteAccess(
-      "/Incubation/Dashboard/TrainingAssignment"
+      "/Incubation/Dashboard/TrainingAssignment",
     );
 
     // States
@@ -148,18 +148,14 @@ const TrainingAssociationTable = forwardRef(
         const token = sessionStorage.getItem("token");
         console.log("Payload being sent to API:", chatData);
 
-        const response = await api.post(
-          "/resources/chat/initiate",
-          chatData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              userid: chatData.from,
-              "X-Module": "Chat Module",
-              "X-Action": "Creating new chat",
-            },
-          }
-        );
+        const response = await api.post("/resources/chat/initiate", chatData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            userid: chatData.from,
+            "X-Module": "Chat Module",
+            "X-Action": "Creating new chat",
+          },
+        });
 
         return response.data;
       } catch (error) {
@@ -203,7 +199,7 @@ const TrainingAssociationTable = forwardRef(
               sessionStorage.getItem("roleid") === "1" ? "ALL" : userId || "1",
             userIncId: incUserid || "1",
             _t: cacheBuster,
-          }
+          },
         );
 
         if (response.data.statusCode === 200) {
@@ -214,7 +210,7 @@ const TrainingAssociationTable = forwardRef(
           console.log("Associations refreshed:", data.length);
         } else {
           throw new Error(
-            response.data.message || "Failed to fetch associations"
+            response.data.message || "Failed to fetch associations",
           );
         }
       } catch (err) {
@@ -296,7 +292,7 @@ const TrainingAssociationTable = forwardRef(
           throw error;
         }
       },
-      [userId]
+      [userId],
     );
 
     // --- HANDLERS ---
@@ -336,7 +332,7 @@ const TrainingAssociationTable = forwardRef(
         setFieldErrors(errors);
         return !errors[name];
       },
-      [fieldErrors]
+      [fieldErrors],
     );
 
     const validateForm = useCallback(() => {
@@ -344,7 +340,7 @@ const TrainingAssociationTable = forwardRef(
       const isIncUserValid = validateField("incUserId", formData.incUserId);
       const isMentorValid = validateField(
         "mentorUserId",
-        formData.mentorUserId
+        formData.mentorUserId,
       );
       return isTrainingValid && isIncUserValid && isMentorValid;
     }, [formData, validateField]);
@@ -363,7 +359,7 @@ const TrainingAssociationTable = forwardRef(
           [name]: finalValue,
         }));
       },
-      [fieldErrors, validateField]
+      [fieldErrors, validateField],
     );
 
     // --- CHAT HANDLER ---
@@ -383,7 +379,7 @@ const TrainingAssociationTable = forwardRef(
           const userChats = await getChatLists(currentUserId, incUserid);
 
           // 2. Check for existing chat
-          const existingChat = userChats.find(chat => {
+          const existingChat = userChats.find((chat) => {
             // Check Subject
             if (chat.chatlistsubject !== expectedSubject) return false;
 
@@ -394,7 +390,7 @@ const TrainingAssociationTable = forwardRef(
             const chatFrom = parseInt(chat.chatlistfrom, 10);
             const chatTo = parseInt(chat.chatlistto, 10);
 
-            const usersMatch = 
+            const usersMatch =
               (chatFrom === mentorId && chatTo === incUserId) ||
               (chatFrom === incUserId && chatTo === mentorId);
 
@@ -404,13 +400,13 @@ const TrainingAssociationTable = forwardRef(
           if (existingChat) {
             // 3. If exists, Route to this exact chat using the chatlistid (chatlistrecid)
             const chatListId = existingChat.chatlistrecid;
-            
+
             navigate(`/Incubation/Dashboard/Chats?id=${chatListId}`);
             showToast("Opening existing chat", "info");
           } else {
             // 4. Else, Create new chat
-            const toId = (currentUserId !== incUserId) ? incUserId : mentorId;
-            const chatType = (toId === mentorId) ? 1 : 2; // 1 for Mentor, 2 for Incubatee
+            const toId = currentUserId !== incUserId ? incUserId : mentorId;
+            const chatType = toId === mentorId ? 1 : 2; // 1 for Mentor, 2 for Incubatee
 
             const chatData = {
               chattype: parseInt(chatType),
@@ -422,7 +418,7 @@ const TrainingAssociationTable = forwardRef(
             };
 
             await createChat(chatData);
-            
+
             // Route to general chat page (without ID)
             navigate(`/Incubation/Dashboard/Chats`);
             showToast("Chat created successfully", "success");
@@ -434,7 +430,7 @@ const TrainingAssociationTable = forwardRef(
           setIsChatting((prev) => ({ ...prev, [recId]: false }));
         }
       },
-      [userId, incUserid, navigate, showToast]
+      [userId, incUserid, navigate, showToast],
     );
 
     const openAddModal = useCallback(() => {
@@ -442,7 +438,7 @@ const TrainingAssociationTable = forwardRef(
         Swal.fire(
           "Access Denied",
           "You do not have permission to add associations.",
-          "warning"
+          "warning",
         );
         return;
       }
@@ -464,7 +460,7 @@ const TrainingAssociationTable = forwardRef(
           Swal.fire(
             "Access Denied",
             "You do not have permission to edit associations.",
-            "warning"
+            "warning",
           );
           return;
         }
@@ -479,7 +475,7 @@ const TrainingAssociationTable = forwardRef(
         setFieldErrors({});
         setOpenDialog(true);
       },
-      [hasWriteAccess]
+      [hasWriteAccess],
     );
 
     const handleClose = useCallback(() => {
@@ -509,7 +505,7 @@ const TrainingAssociationTable = forwardRef(
           if (response.statusCode === 200) {
             showToast(
               `Association ${dialogType === "add" ? "added" : "updated"} successfully!`,
-              "success"
+              "success",
             );
             fetchAssociations();
           } else {
@@ -518,7 +514,7 @@ const TrainingAssociationTable = forwardRef(
         } catch (err) {
           console.error(
             `Error ${dialogType === "add" ? "adding" : "updating"} association:`,
-            err
+            err,
           );
           const errorMessage =
             err.response?.data?.message ||
@@ -537,7 +533,7 @@ const TrainingAssociationTable = forwardRef(
         createAssociation,
         updateAssociation,
         fetchAssociations,
-      ]
+      ],
     );
 
     const handleDelete = useCallback(
@@ -546,7 +542,7 @@ const TrainingAssociationTable = forwardRef(
           Swal.fire(
             "Access Denied",
             "You do not have permission to delete associations.",
-            "warning"
+            "warning",
           );
           return;
         }
@@ -565,12 +561,10 @@ const TrainingAssociationTable = forwardRef(
               [item.trainingassnrecid]: true,
             }));
             try {
-              const response = await deleteAssociation(
-                item.trainingassnrecid
-              );
+              const response = await deleteAssociation(item.trainingassnrecid);
               if (response.statusCode !== 200) {
                 throw new Error(
-                  response.message || "Failed to delete association"
+                  response.message || "Failed to delete association",
                 );
               }
               return response.data;
@@ -590,13 +584,13 @@ const TrainingAssociationTable = forwardRef(
             Swal.fire(
               "Deleted!",
               "Association deleted successfully!",
-              "success"
+              "success",
             );
             fetchAssociations();
           }
         });
       },
-      [hasWriteAccess, deleteAssociation, fetchAssociations]
+      [hasWriteAccess, deleteAssociation, fetchAssociations],
     );
 
     // --- DATA GRID CONFIG ---
@@ -609,21 +603,21 @@ const TrainingAssociationTable = forwardRef(
           width: 250,
           sortable: true,
         },
-        {
-          field: "traineename",
-          headerName: "Trainee Name",
-          width: 150,
-          sortable: true,
-        },
+        // {
+        //   field: "traineename",
+        //   headerName: "Trainee Name",
+        //   width: 150,
+        //   sortable: true,
+        // },
         {
           field: "incubateename",
-          headerName: "Incubatee Name",
+          headerName: "Assigned To",
           width: 180,
           sortable: true,
         },
         {
           field: "mentorname",
-          headerName: "Mentor Name",
+          headerName: "Assigned By",
           width: 150,
           sortable: true,
         },
@@ -738,7 +732,14 @@ const TrainingAssociationTable = forwardRef(
             ]
           : []),
       ],
-      [hasWriteAccess, isSaving, isDeleting, isChatting, handleChat, handleDelete]
+      [
+        hasWriteAccess,
+        isSaving,
+        isDeleting,
+        isChatting,
+        handleChat,
+        handleDelete,
+      ],
     );
 
     const exportConfig = useMemo(
@@ -746,7 +747,7 @@ const TrainingAssociationTable = forwardRef(
         filename: "training_associations",
         sheetName: "Associations",
       }),
-      []
+      [],
     );
 
     const onExportData = useMemo(
@@ -763,7 +764,7 @@ const TrainingAssociationTable = forwardRef(
           "Modified By": item.modifiedname || item.trainingassnmodifiedby || "",
           "Modified Time": formatDate(item.trainingassnmodifiedtime),
         })),
-      []
+      [],
     );
 
     // --- EFFECTS ---
@@ -913,8 +914,8 @@ const TrainingAssociationTable = forwardRef(
                 {isSaving
                   ? "Saving..."
                   : dialogType === "add"
-                  ? "Add"
-                  : "Save Changes"}
+                    ? "Add"
+                    : "Save Changes"}
               </Button>
             </DialogActions>
           </form>
@@ -955,7 +956,7 @@ const TrainingAssociationTable = forwardRef(
         </StyledBackdrop>
       </Box>
     );
-  }
+  },
 );
 
 export default TrainingAssociationTable;
