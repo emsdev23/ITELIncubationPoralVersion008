@@ -5,10 +5,94 @@ export const validateEmail = (email) => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 };
 
-export const validatePhone = (phone) => {
-  if (!phone) return false;
-  return /^[6-9]\d{9}$/.test(String(phone));
+const PHONE_RULES = {
+  91: { test: (v) => /^[6-9]\d{9}$/.test(v), desc: "10-digit Indian" },
+  1: { test: (v) => /^\d{10}$/.test(v), desc: "10-digit North American" },
+  44: { test: (v) => /^\d{10,11}$/.test(v), desc: "UK" },
+  61: { test: (v) => /^\d{9}$/.test(v), desc: "9-digit Australian" },
+  86: { test: (v) => /^\d{11}$/.test(v), desc: "11-digit Chinese" },
+  81: { test: (v) => /^\d{10,11}$/.test(v), desc: "Japanese" },
+  49: { test: (v) => /^\d{6,13}$/.test(v), desc: "German" },
+  33: { test: (v) => /^\d{9}$/.test(v), desc: "9-digit French" },
+  55: { test: (v) => /^\d{10,11}$/.test(v), desc: "Brazilian" },
+  7: { test: (v) => /^\d{10}$/.test(v), desc: "10-digit Russian" },
+  39: { test: (v) => /^\d{8,11}$/.test(v), desc: "Italian" },
+  34: { test: (v) => /^\d{9}$/.test(v), desc: "9-digit Spanish" },
+  31: { test: (v) => /^\d{9}$/.test(v), desc: "9-digit Dutch" },
+  46: { test: (v) => /^\d{7,13}$/.test(v), desc: "Swedish" },
+  41: { test: (v) => /^\d{9}$/.test(v), desc: "9-digit Swiss" },
+  82: { test: (v) => /^\d{9,11}$/.test(v), desc: "Korean" },
+  92: { test: (v) => /^\d{10}$/.test(v), desc: "10-digit Pakistani" },
+  94: { test: (v) => /^\d{10}$/.test(v), desc: "10-digit Sri Lankan" },
+  880: { test: (v) => /^\d{10}$/.test(v), desc: "10-digit Bangladeshi" },
+  977: { test: (v) => /^\d{10}$/.test(v), desc: "10-digit Nepali" },
+  60: { test: (v) => /^\d{9,10}$/.test(v), desc: "Malaysian" },
+  62: { test: (v) => /^\d{8,12}$/.test(v), desc: "Indonesian" },
+  63: { test: (v) => /^\d{10}$/.test(v), desc: "10-digit Filipino" },
+  64: { test: (v) => /^\d{8,10}$/.test(v), desc: "New Zealand" },
+  27: { test: (v) => /^\d{9}$/.test(v), desc: "9-digit South African" },
+  966: { test: (v) => /^\d{9}$/.test(v), desc: "9-digit Saudi" },
+  971: { test: (v) => /^\d{9}$/.test(v), desc: "9-digit UAE" },
+  65: { test: (v) => /^\d{8}$/.test(v), desc: "8-digit Singapore" },
+  852: { test: (v) => /^\d{8}$/.test(v), desc: "8-digit Hong Kong" },
+  886: { test: (v) => /^\d{9}$/.test(v), desc: "9-digit Taiwanese" },
+  84: { test: (v) => /^\d{9,10}$/.test(v), desc: "Vietnamese" },
+  66: { test: (v) => /^\d{9}$/.test(v), desc: "9-digit Thai" },
+  90: { test: (v) => /^\d{10}$/.test(v), desc: "10-digit Turkish" },
+  98: { test: (v) => /^\d{10}$/.test(v), desc: "10-digit Iranian" },
+  234: { test: (v) => /^\d{8,11}$/.test(v), desc: "Nigerian" },
+  254: { test: (v) => /^\d{10}$/.test(v), desc: "10-digit Kenyan" },
+  233: { test: (v) => /^\d{10}$/.test(v), desc: "10-digit Ghanaian" },
+  default: { test: (v) => /^\d{4,15}$/.test(v), desc: "" },
 };
+
+// ─── Max digit length per country code (drives input restriction) ────────────
+// Kept in sync with PHONE_RULES above — each value is the upper bound allowed
+// by that country's regex, so typing/pasting beyond it is blocked at the
+// input level, before format validation ever runs.
+export const PHONE_MAX_LENGTH = {
+  91: 10,
+  1: 10,
+  44: 11,
+  61: 9,
+  86: 11,
+  81: 11,
+  49: 13,
+  33: 9,
+  55: 11,
+  7: 10,
+  39: 11,
+  34: 9,
+  31: 9,
+  46: 13,
+  41: 9,
+  82: 11,
+  92: 10,
+  94: 10,
+  880: 10,
+  977: 10,
+  60: 10,
+  62: 12,
+  63: 10,
+  64: 10,
+  27: 9,
+  966: 9,
+  971: 9,
+  65: 8,
+  852: 8,
+  886: 9,
+  84: 10,
+  66: 9,
+  90: 10,
+  98: 10,
+  234: 11,
+  254: 10,
+  233: 10,
+  default: 15,
+};
+
+export const getPhoneMaxLength = (phoneCode) =>
+  PHONE_MAX_LENGTH[phoneCode] || PHONE_MAX_LENGTH.default;
 
 // ─── Fields per step (ALL required to proceed) ────────────────────────────────
 
@@ -56,7 +140,7 @@ export const FIELD_LABELS = {
 
 // ─── Single-field validator — returns error string or "" ──────────────────────
 
-export const validateField = (name, value) => {
+export const validateField = (name, value, formData = {}) => {
   const label = FIELD_LABELS[name] || name;
   const isEmpty = (v) =>
     v === undefined || v === null || String(v).trim() === "";
@@ -90,11 +174,16 @@ export const validateField = (name, value) => {
       if (!validateEmail(value)) return "Please enter a valid email address";
       break;
 
-    case "phone":
+    case "phone": {
       if (isEmpty(value)) return `${label} is required`;
-      if (!validatePhone(value))
-        return "Please enter a valid 10-digit mobile number (starting with 6-9)";
+      const phoneCode = formData?.phoneCode || "91";
+      const rule = PHONE_RULES[phoneCode] || PHONE_RULES.default;
+      if (!rule.test(String(value)))
+        return rule.desc
+          ? `Please enter a valid ${rule.desc} mobile number`
+          : "Please enter a valid mobile number (4-15 digits)";
       break;
+    }
 
     case "address":
       if (isEmpty(value)) return `${label} is required`;
@@ -142,7 +231,7 @@ export const validateStep = (stepIndex, formData) => {
   const errors = {};
   const fields = STEP_FIELDS[stepIndex] || [];
   fields.forEach((field) => {
-    const err = validateField(field, formData[field]);
+    const err = validateField(field, formData[field], formData);
     if (err) errors[field] = err;
   });
   return errors;
@@ -168,6 +257,7 @@ export const emptyForm = (incUserid, userId) => ({
   gender: "",
   designation: "",
   phone: "",
+  phoneCode: "91",
   address: "",
   email: "",
   domain: "",
@@ -181,3 +271,4 @@ export const emptyForm = (incUserid, userId) => ({
   comment: "",
   createdBy: userId || "1",
 });
+

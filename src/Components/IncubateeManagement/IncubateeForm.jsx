@@ -20,8 +20,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  FormControlLabel,
-  Switch,
   Alert,
   Collapse,
 } from "@mui/material";
@@ -44,7 +42,7 @@ import {
   FIELD_TO_API_KEY,
   FIELD_LABELS,
   EMPTY_FORM,
-} from "./incubateeValidations";
+} from "./Incubateevalidations";
 
 // ─── Styled components ────────────────────────────────────────────────────────
 
@@ -345,11 +343,6 @@ export default function IncubateeForm({
     setTabValue((prev) => Math.max(prev - 1, 0));
   }, []);
 
-  const handleTabClick = useCallback((_, newValue) => {
-    setTabBannerErrors({});
-    setTabValue(newValue);
-  }, []);
-
   // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = useCallback(
     (e) => {
@@ -397,8 +390,8 @@ export default function IncubateeForm({
               incubateesshareperprice: formData.incubateesshareperprice,
               incubateescin: formData.incubateescin.trim(),
               incubateesdin: formData.incubateesdin.trim(),
-              incubateesgst: formData.incubateesgst.trim(),
-              incubateesgstregdate: formData.incubateesgstregdate,
+              incubateesgst: formData.incubateesgst.trim() || null,
+              incubateesgstregdate: formData.incubateesgstregdate || null,
               incubateesdpiitnumber: formData.incubateesdpiitnumber.trim(),
               incubateeslogopath: formData.incubateeslogopath.trim(),
               incubateesdurationofextension:
@@ -410,7 +403,7 @@ export default function IncubateeForm({
               incubateesincubatorphone:
                 formData.incubateesincubatorphone.trim(),
               incubateespannumber: formData.incubateespannumber.trim(),
-              incubateesuan: formData.incubateesuan.trim(),
+              incubateesuan: formData.incubateesuan.trim() || null,
               incubateesnooffounders: formData.incubateesnooffounders,
               incubateesaccountantname:
                 formData.incubateesaccountantname.trim(),
@@ -508,7 +501,6 @@ export default function IncubateeForm({
             <AppBar position="static" color="default" elevation={0}>
               <Tabs
                 value={tabValue}
-                onChange={handleTabClick}
                 indicatorColor="primary"
                 textColor="primary"
                 variant="fullWidth"
@@ -1003,31 +995,6 @@ export default function IncubateeForm({
                         }}
                       />
                     </Grid>
-                    {editIncubatee && (
-                      <Grid item xs={12} sm={6}>
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", mt: 1 }}
-                        >
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={f("incubateesadminstate") === 1}
-                                onChange={handleChange}
-                                name="incubateesadminstate"
-                                color="primary"
-                                disabled={isSaving}
-                              />
-                            }
-                            label="Status"
-                          />
-                          <Typography variant="caption" sx={{ ml: 1 }}>
-                            {f("incubateesadminstate") === 1
-                              ? "Active"
-                              : "Inactive"}
-                          </Typography>
-                        </Box>
-                      </Grid>
-                    )}
                   </Grid>
                 </CardContent>
               </SectionCard>
@@ -1110,32 +1077,6 @@ export default function IncubateeForm({
                         helperText="Optional: path or URL to company logo"
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <StyledTextField
-                        fullWidth
-                        label="Created Time"
-                        name="incubateescreatedtime"
-                        type="date"
-                        value={f("incubateescreatedtime")}
-                        onChange={handleChange}
-                        disabled={isSaving}
-                        variant="outlined"
-                        InputLabelProps={{ shrink: true }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <StyledTextField
-                        fullWidth
-                        label="Modified Time"
-                        name="incubateesmodifiedtime"
-                        type="date"
-                        value={f("incubateesmodifiedtime")}
-                        onChange={handleChange}
-                        disabled={isSaving}
-                        variant="outlined"
-                        InputLabelProps={{ shrink: true }}
-                      />
-                    </Grid>
                   </Grid>
                 </CardContent>
               </SectionCard>
@@ -1188,3 +1129,4 @@ export default function IncubateeForm({
     </>
   );
 }
+

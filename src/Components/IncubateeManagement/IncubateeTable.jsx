@@ -291,8 +291,8 @@ export default function IncubateeTable() {
                 title="Edit"
               >
                 <EditIcon fontSize="small" />
-              </ActionButton>
-              <ActionButton
+             </ActionButton>
+             {/* <ActionButton
                 color="delete"
                 onClick={() => handleDelete(params.row.incubateesrecid)}
                 disabled={isDeleting[params.row.incubateesrecid]}
@@ -303,7 +303,7 @@ export default function IncubateeTable() {
                 ) : (
                   <DeleteIcon fontSize="small" />
                 )}
-              </ActionButton>
+              </ActionButton> */}
             </Box>
           ) : null,
       },

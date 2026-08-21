@@ -77,8 +77,6 @@ export const FIELD_DISPLAY_NAMES = {
   incubateesaccountantname: "Accountant Name",
   incubateesauditorname: "Auditor Name",
   incubateessecretaryname: "Secretary Name",
-  incubateescreatedtime: "Created Time",
-  incubateesmodifiedtime: "Modified Time",
 };
 
 // ─── Fields per tab (ALL are required) ───────────────────────────────────────
@@ -119,8 +117,6 @@ export const TAB_ALL_FIELDS = {
     "incubateesaccountantname",
     "incubateesauditorname",
     "incubateessecretaryname",
-    "incubateescreatedtime",
-    "incubateesmodifiedtime",
   ],
 };
 
@@ -180,13 +176,12 @@ export const validateField = (name, value) => {
       break;
 
     case "incubateesgst":
-      if (isEmpty(value)) return `${label} is required`;
-      if (!validateGST(value))
+      if (!isEmpty(value) && !validateGST(value))
         return "Please enter a valid GST (e.g., 22AAAAA0000A1Z5)";
       break;
 
     case "incubateesgstregdate":
-      if (isEmpty(value)) return `${label} is required`;
+      // optional field
       break;
 
     case "incubateesdpiitnumber":
@@ -200,8 +195,7 @@ export const validateField = (name, value) => {
       break;
 
     case "incubateesuan":
-      if (isEmpty(value)) return `${label} is required`;
-      if (!validateUAN(value)) return "Please enter a valid 12-digit UAN";
+      if (!isEmpty(value) && !validateUAN(value)) return "Please enter a valid 12-digit UAN";
       break;
 
     case "incubateestotalshare":
@@ -259,14 +253,6 @@ export const validateField = (name, value) => {
       break;
 
     case "incubateessecretaryname":
-      if (isEmpty(value)) return `${label} is required`;
-      break;
-
-    case "incubateescreatedtime":
-      if (isEmpty(value)) return `${label} is required`;
-      break;
-
-    case "incubateesmodifiedtime":
       if (isEmpty(value)) return `${label} is required`;
       break;
 
@@ -375,3 +361,4 @@ export const EMPTY_FORM = {
   incubateescreatedby: "",
   incubateesmodifiedby: "",
 };
+

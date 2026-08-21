@@ -218,7 +218,7 @@ const Navbar = () => {
           ? "Due Deligence Inspector"
           : roleid === "4"
             ? "Incubatee"
-            : roleid === "12"
+            : roleid === "9"
               ? "Mentor"
               : "Admin";
 

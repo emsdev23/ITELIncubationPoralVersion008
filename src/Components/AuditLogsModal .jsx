@@ -96,7 +96,7 @@ const AuditLogsModal = ({ isOpen, onClose, IPAddress, token, userid }) => {
         {
           startDate: `${start} 00:00:00`,
           endDate: `${end} 23:59:59`,
-          userId: "ALL",
+          userId: "userid",
         },
         {
           headers: {
