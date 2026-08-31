@@ -541,13 +541,13 @@ export default function MentorForm({
         mentordetsemail: formData.email,
         mentordetsdomain: formData.domain,
         mentordetspastexp: formData.pastExp,
-        mentordetslinkedin: formData.linkedin,
-        mentordetswebsite: formData.website,
-        mentordetsblog: formData.blog,
+        mentordetslinkedin: formData.linkedin || null,
+        mentordetswebsite: formData.website || null,
+        mentordetsblog: formData.blog || null,
         mentordetsimagepath: formData.imagePath,
         mentordetstimecommitment: formData.timeCommitment,
-        mentordetsprevstupmentor: formData.prevStupMentor,
-        mentordetscomment: formData.comment,
+        mentordetsprevstupmentor: formData.prevStupMentor || null,
+        mentordetscomment: formData.comment || null,
         mentordetsgender: formData.gender,
         mentordetsadminstate: isEdit ? (formData.mentordetsadminstate ?? 1) : 1,
         mentordetsid: isEdit ? editingItem.mentordetsid : 0,
@@ -892,7 +892,7 @@ export default function MentorForm({
                 <Grid item xs={12} sm={4}>
                   <TextField
                     name="linkedin"
-                    label="LinkedIn Profile *"
+                    label="LinkedIn Profile"
                     fullWidth
                     variant="outlined"
                     value={f("linkedin")}
@@ -906,7 +906,7 @@ export default function MentorForm({
                 <Grid item xs={12} sm={4}>
                   <TextField
                     name="website"
-                    label="Website *"
+                    label="Website"
                     fullWidth
                     variant="outlined"
                     value={f("website")}
@@ -920,7 +920,7 @@ export default function MentorForm({
                 <Grid item xs={12} sm={4}>
                   <TextField
                     name="blog"
-                    label="Blog Link *"
+                    label="Blog Link"
                     fullWidth
                     variant="outlined"
                     value={f("blog")}
@@ -934,7 +934,7 @@ export default function MentorForm({
                 <Grid item xs={12} sm={12} md={12}>
                   <TextField
                     name="prevStupMentor"
-                    label="Previously Mentored Startup Experience? *"
+                    label="Previously Mentored Startup Experience?"
                     fullWidth
                     variant="outlined"
                     value={f("prevStupMentor")}

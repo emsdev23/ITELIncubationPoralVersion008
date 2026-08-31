@@ -36,7 +36,18 @@ export const validateDIN = (din) => {
 
 export const validatePhone = (phone) => {
   if (!phone) return false;
-  return /^[6-9]\d{9}$/.test(phone);
+  // Accepts mobile / landline / international numbers:
+  // optional "+" country code, 7-15 digits, may contain spaces, hyphens, dots or parentheses
+  const cleaned = String(phone).replace(/[\s\-().]/g, "");
+  return /^\+?\d{7,15}$/.test(cleaned);
+};
+
+export const validateWebsite = (url) => {
+  if (!url) return false;
+  // Accepts example.com, www.example.com, https://example.com/path etc.
+  return /^(https?:\/\/)?(([\w-]+\.)+[a-z]{2,})(\/\S*)?$/i.test(
+    String(url).trim(),
+  );
 };
 
 // ─── Human-readable field labels (used in error messages) ─────────────────────
@@ -107,8 +118,6 @@ export const TAB_ALL_FIELDS = {
   2: [
     "incubateesdateofincubation",
     "incubateesdateofincorporation",
-    "incubateesdurationofextension",
-    "incubateesdateofextension",
     "incubateesincubatorname",
     "incubateesincubatoremail",
     "incubateesincubatorphone",
@@ -161,6 +170,8 @@ export const validateField = (name, value) => {
 
     case "incubateeswebsite":
       if (isEmpty(value)) return `${label} is required`;
+      if (!validateWebsite(value))
+        return "Please enter a valid website link (e.g., https://example.com)";
       break;
 
     // ── Tab 1 ──
@@ -220,11 +231,16 @@ export const validateField = (name, value) => {
       break;
 
     case "incubateesdurationofextension":
-      if (isEmpty(value)) return `${label} is required`;
+      // optional field - validated only when provided
+      if (
+        !isEmpty(value) &&
+        (!Number.isFinite(Number(value)) || Number(value) <= 0)
+      )
+        return `${label} must be a positive number`;
       break;
 
     case "incubateesdateofextension":
-      if (isEmpty(value)) return `${label} is required`;
+      // optional field
       break;
 
     case "incubateesincubatorname":
@@ -240,7 +256,7 @@ export const validateField = (name, value) => {
     case "incubateesincubatorphone":
       if (isEmpty(value)) return `${label} is required`;
       if (!validatePhone(value))
-        return "Please enter a valid 10-digit mobile number (starting with 6-9)";
+        return "Please enter a valid phone number (e.g., +91 9876543210 or 044-2233-4455)";
       break;
 
     // ── Tab 3 ──

@@ -111,10 +111,6 @@ export const STEP_FIELDS = {
     "domain",
     "pastExp",
     "timeCommitment",
-    "linkedin",
-    "website",
-    "blog",
-    "prevStupMentor",
   ],
 };
 
@@ -203,19 +199,19 @@ export const validateField = (name, value, formData = {}) => {
       break;
 
     case "linkedin":
-      if (isEmpty(value)) return `${label} is required`;
+      // Optional field — validated only if a value is provided
       break;
 
     case "website":
-      if (isEmpty(value)) return `${label} is required`;
+      // Optional field — validated only if a value is provided
       break;
 
     case "blog":
-      if (isEmpty(value)) return `${label} is required`;
+      // Optional field — validated only if a value is provided
       break;
 
     case "prevStupMentor":
-      if (isEmpty(value)) return `${label} is required`;
+      // Optional field — validated only if a value is provided
       break;
 
     default:

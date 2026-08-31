@@ -395,7 +395,7 @@ export default function IncubateeForm({
               incubateesdpiitnumber: formData.incubateesdpiitnumber.trim(),
               incubateeslogopath: formData.incubateeslogopath.trim(),
               incubateesdurationofextension:
-                formData.incubateesdurationofextension,
+                formData.incubateesdurationofextension || null,
               incubateesaddress: formData.incubateesaddress.trim(),
               incubateesincubatorname: formData.incubateesincubatorname.trim(),
               incubateesincubatoremail:
@@ -414,7 +414,8 @@ export default function IncubateeForm({
               incubateesdateofincubation: formData.incubateesdateofincubation,
               incubateesdateofincorporation:
                 formData.incubateesdateofincorporation,
-              incubateesdateofextension: formData.incubateesdateofextension,
+              incubateesdateofextension:
+                formData.incubateesdateofextension || null,
               incubateeswebsite: formData.incubateeswebsite,
               incubateesincrecid: 1,
               incubateescreatedtime: formData.incubateescreatedtime,
@@ -676,6 +677,10 @@ export default function IncubateeForm({
                         disabled={isSaving}
                         variant="outlined"
                         placeholder="https://example.com"
+                        error={!!err("incubateeswebsite")}
+                        helperText={
+                          err("incubateeswebsite") || "e.g., https://example.com"
+                        }
                       />
                     </Grid>
                   </Grid>
@@ -932,6 +937,8 @@ export default function IncubateeForm({
                         onChange={handleChange}
                         disabled={isSaving}
                         variant="outlined"
+                        error={!!err("incubateesdurationofextension")}
+                        helperText={err("incubateesdurationofextension")}
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
@@ -945,6 +952,8 @@ export default function IncubateeForm({
                         disabled={isSaving}
                         variant="outlined"
                         InputLabelProps={{ shrink: true }}
+                        error={!!err("incubateesdateofextension")}
+                        helperText={err("incubateesdateofextension")}
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
@@ -981,11 +990,10 @@ export default function IncubateeForm({
                         onChange={handleChange}
                         disabled={isSaving}
                         variant="outlined"
-                        inputProps={{ maxLength: 10 }}
                         error={!!err("incubateesincubatorphone")}
                         helperText={
                           err("incubateesincubatorphone") ||
-                          "10-digit Indian mobile number (starts with 6-9)"
+                          "Mobile / landline / international (e.g., +91 9876543210)"
                         }
                         InputProps={{
                           endAdornment:
