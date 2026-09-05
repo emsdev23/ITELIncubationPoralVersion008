@@ -348,7 +348,7 @@ export default function DocCatTable() {
             doccatname: formData.doccatname.trim(),
             doccatdescription: formData.doccatdescription.trim(),
             ...(isEdit
-              ? { doccatrecid: editCat.doccatrecid, doccatmodifiedby: userId }
+              ? { doccatrecid: editCat.doccatrecid, doccatmodifiedby: userId, doccatadminstate: editCat.doccatadminstate }
               : { doccatcreatedby: userId, doccatmodifiedby: userId }),
           },
           {
