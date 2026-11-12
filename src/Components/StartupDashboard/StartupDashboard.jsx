@@ -1472,18 +1472,20 @@ const StartupDashboard = () => {
       },
     ];
 
-    // Add actions column only for roleid 4
-    if ([4, 5].includes(Number(roleid))) {
+    // Add actions column for roles 1, 4 & 5
+if ([1, 4, 5].includes(Number(roleid))) {
       baseColumns.push({
         field: "actions",
         headerName: "Actions",
         width: 320,
         sortable: false,
-        renderCell: (params) => {
+renderCell: (params) => {
+          const isRole1 = Number(roleid) === 1;
+          const isRole45 = [4, 5].includes(Number(roleid));
           return (
             <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
-              {/* Add Button */}
-              {params.row.status !== "Submitted" && (
+              {/* Add Button - only for roles 4 & 5 */}
+              {isRole45 && params.row.status !== "Submitted" && (
                 <Button
                   variant="outlined"
                   size="small"
@@ -1495,8 +1497,8 @@ const StartupDashboard = () => {
                 </Button>
               )}
 
-              {/* View Doc Button */}
-              {params.row.status === "Submitted" && params.row.filepath && (
+              {/* View Doc Button - for role 1 and roles 4 & 5 */}
+              {(isRole1 || isRole45) && params.row.status === "Submitted" && params.row.filepath && (
                 <Button
                   variant="outlined"
                   size="small"
@@ -1511,8 +1513,8 @@ const StartupDashboard = () => {
                 </Button>
               )}
 
-              {/* Share Button */}
-              {params.row.status === "Submitted" && params.row.filepath && (
+              {/* Share Button - only for roles 4 & 5 */}
+              {isRole45 && params.row.status === "Submitted" && params.row.filepath && (
                 <Button
                   variant="outlined"
                   size="small"
@@ -1526,8 +1528,8 @@ const StartupDashboard = () => {
                 </Button>
               )}
 
-              {/* Obsolete Button - Only shows when status is "Submitted" */}
-              {params.row.collecteddocobsoletestate === "Not Obsolete" && (
+              {/* Obsolete Button - only for roles 4 & 5 */}
+              {isRole45 && params.row.collecteddocobsoletestate === "Not Obsolete" && (
                 <Button
                   variant="outlined"
                   color="error"
@@ -1537,6 +1539,7 @@ const StartupDashboard = () => {
                   Obsolete
                 </Button>
               )}
+
             </Box>
           );
         },
@@ -2188,7 +2191,7 @@ const StartupDashboard = () => {
         </div>
         <br />
         {/* Always render DocumentsTable but control visibility */}
-        <div style={{ display: [4, 5].includes(Number(roleid)) ? "block" : "none" }}>
+        <div style={{ display: [1, 4, 5].includes(Number(roleid)) ? "block" : "none" }}>
           <DocumentsTable />
         </div>
 
