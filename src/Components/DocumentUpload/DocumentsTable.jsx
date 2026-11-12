@@ -12,6 +12,7 @@ import * as XLSX from "xlsx";
 import { Download } from "lucide-react";
 import { FaTimes } from "react-icons/fa";
 import { FaPowerOff } from "react-icons/fa";
+import { normalizeFileUrl } from "../Datafetching/IPAdrees";
 
 // Material UI imports
 import {
@@ -368,7 +369,7 @@ const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {
   }, [incUserid]);
 
   const fetchApplicabilityDetails = useCallback(() => {
-    if (Number(roleid) !== 4) return;
+    if (![4, 5].includes(Number(roleid))) return;
 
     api
       .post(
@@ -494,7 +495,7 @@ const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {
           );
         }
 
-        const fileUrl = fileUrlResponse.data.data;
+        const fileUrl = normalizeFileUrl(fileUrlResponse.data.data);
 
         let fileResponse;
         try {
@@ -685,7 +686,7 @@ const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {
         );
 
         if (response.data.statusCode === 200 && response.data.data) {
-          return response.data.data;
+          return normalizeFileUrl(response.data.data);
         } else {
           throw new Error(response.data.message || "Invalid response format");
         }
@@ -723,7 +724,7 @@ const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {
         );
 
         if (response.data.statusCode === 200 && response.data.data) {
-          const fileUrl = response.data.data;
+          const fileUrl = normalizeFileUrl(response.data.data);
 
           let fileResponse;
 
@@ -2152,7 +2153,7 @@ const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {
       },
     ];
 
-    if (Number(roleid) !== 4) {
+    if (![4, 5].includes(Number(roleid))) {
       baseColumns.push(
         {
           field: "documentcreatedby",
@@ -2249,7 +2250,7 @@ const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {
       });
     }
 
-    if (Number(roleid) === 4) {
+    if ([4, 5].includes(Number(roleid))) {
       baseColumns.push({
         field: "applicability",
         headerName: "Action",
@@ -2416,7 +2417,7 @@ const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {
 
       <ReusableDataGrid
         data={
-          Number(roleid) === 4
+          [4, 5].includes(Number(roleid))
             ? documents.filter((doc) => doc.documentadminstate === 1)
             : documents
         }

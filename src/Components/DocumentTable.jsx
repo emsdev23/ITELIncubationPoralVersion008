@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import { DataContext } from "../Components/Datafetching/DataProvider";
 import Swal from "sweetalert2";
-import { IPAdress } from "./Datafetching/IPAdrees";
+import { IPAdress, normalizeFileUrl } from "./Datafetching/IPAdrees";
 import ReusableDataGrid from "../Components/Datafetching/ReusableDataGrid";
 import styles from "./DocumentTable.module.css";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -276,7 +276,7 @@ export default function DocumentTable() {
       const data = response.data;
 
       if (data.statusCode === 200 && data.data) {
-        const fileUrl = data.data;
+        const fileUrl = normalizeFileUrl(data.data);
         const fileExtension = filepath.split(".").pop().toLowerCase();
         const previewable = ["pdf", "png", "jpeg", "jpg"];
 

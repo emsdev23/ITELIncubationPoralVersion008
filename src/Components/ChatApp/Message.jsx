@@ -1,7 +1,7 @@
 // src/components/Message.jsx
 import React, { useState, useEffect } from "react";
 import "./Message.css";
-import { IPAdress } from "../Datafetching/IPAdrees";
+import { IPAdress, normalizeFileUrl } from "../Datafetching/IPAdrees";
 
 const Message = ({
   message,
@@ -217,7 +217,7 @@ const Message = ({
       }
 
       const data = await response.json();
-      return data.data;
+      return normalizeFileUrl(data.data);
     } catch (error) {
       console.error("Error getting file URL:", error);
       throw error;

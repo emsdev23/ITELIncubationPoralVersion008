@@ -484,7 +484,7 @@ export const DataProvider = ({ children }) => {
       clearAllData();
       return;
     }
-    if (Number(roleid) === 4 && (adminViewingStartupId || adminviewData)) {
+    if ([4, 5].includes(Number(roleid)) && (adminViewingStartupId || adminviewData)) {
       resetAdminView();
     }
   }, [userid, roleid, incuserid]);

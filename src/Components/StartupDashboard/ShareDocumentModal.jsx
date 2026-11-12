@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import Swal from "sweetalert2";
 import api from "../Datafetching/api";
+import { normalizeFileUrl } from "../Datafetching/IPAdrees";
 
 const ShareDocumentModal = ({
   isOpen,
@@ -65,7 +66,7 @@ const ShareDocumentModal = ({
         throw new Error("Failed to get file URL");
       }
 
-      const fileUrl = fileResponse.data.data;
+      const fileUrl = normalizeFileUrl(fileResponse.data.data);
 
       // Share the document using your encrypted api
       const shareResponse = await api.post(

@@ -12,7 +12,7 @@ export default defineConfig({
     ],
     proxy: {
       "/itelinc": {
-        target: "http://10.3.3.160:8086",
+        target: "http://10.20.35.21:8086",
         changeOrigin: true,
         secure: false,
       },

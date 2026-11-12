@@ -4,7 +4,7 @@ import api from "../Datafetching/api";
 import Swal from "sweetalert2";
 import style from "../StartupDashboard/StartupDashboard.module.css";
 import * as XLSX from "xlsx";
-import { IPAdress } from "../Datafetching/IPAdrees";
+import { IPAdress, normalizeFileUrl } from "../Datafetching/IPAdrees";
 import { Download, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { DataContext } from "../Datafetching/DataProvider";
@@ -366,7 +366,7 @@ export default function DDIDocumentsTable({ userRecID = "ALL" }) {
       const data = response.data;
 
       if (data.statusCode === 200 && data.data) {
-        const fileUrl = data.data;
+        const fileUrl = normalizeFileUrl(data.data);
         const fileExtension = filepath.split(".").pop().toLowerCase();
         const previewable = ["pdf", "png", "jpeg", "jpg"];
 

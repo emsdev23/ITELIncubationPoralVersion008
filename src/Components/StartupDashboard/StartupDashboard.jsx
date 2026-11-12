@@ -47,7 +47,7 @@ import ChangePasswordModal from "./ChangePasswordModal";
 import ContactModal from "./ContactModal";
 import MentorModel from "./MentorModel";
 import DocumentsTable from "../DocumentUpload/DocumentsTable";
-import { IPAdress } from "../Datafetching/IPAdrees";
+import { IPAdress, normalizeFileUrl } from "../Datafetching/IPAdrees";
 import api from "../Datafetching/api";
 import AuditLogsModal from "../AuditLogsModal ";
 import ShareDocumentModal from "./ShareDocumentModal";
@@ -406,7 +406,7 @@ const StartupDashboard = () => {
       (Number(roleid) === 7 && adminviewData)
     ) {
       return startupdetails?.[0];
-    } else if (Number(roleid) === 4) {
+    } else if ([4, 5].includes(Number(roleid))) {
       return listOfIncubatees?.[0];
     }
     return null;
@@ -419,7 +419,7 @@ const StartupDashboard = () => {
       (Number(roleid) === 7 && adminviewData)
     ) {
       return startupcompanyDoc || [];
-    } else if (Number(roleid) === 4) {
+    } else if ([4, 5].includes(Number(roleid))) {
       return companyDoc || [];
     }
     return [];
@@ -690,7 +690,7 @@ const StartupDashboard = () => {
           );
 
           if (response.data.statusCode === 200 && response.data.data) {
-            setCompanyLogoUrl(response.data.data); // This is the full URL
+            setCompanyLogoUrl(normalizeFileUrl(response.data.data)); // This is the full URL
           }
         } catch (error) {
           console.error("Error fetching logo URL:", error);
@@ -825,7 +825,7 @@ const StartupDashboard = () => {
       const data = response.data;
 
       if (data.statusCode === 200 && data.data) {
-        const fileUrl = data.data;
+        const fileUrl = normalizeFileUrl(data.data);
         const fileExtension = filepath.split(".").pop().toLowerCase();
         const previewable = ["pdf", "png", "jpeg", "jpg"];
 
@@ -1070,7 +1070,7 @@ const StartupDashboard = () => {
         );
 
         if (urlResponse.data.statusCode === 200 && urlResponse.data.data) {
-          const imageUrl = urlResponse.data.data;
+          const imageUrl = normalizeFileUrl(urlResponse.data.data);
           setCompanyLogoUrl(imageUrl);
 
           // Update the incubatee logo in the UI immediately
@@ -1473,7 +1473,7 @@ const StartupDashboard = () => {
     ];
 
     // Add actions column only for roleid 4
-    if (Number(roleid) === 4) {
+    if ([4, 5].includes(Number(roleid))) {
       baseColumns.push({
         field: "actions",
         headerName: "Actions",
@@ -1793,7 +1793,7 @@ const StartupDashboard = () => {
                     )}
 
                     {/* Camera Icon for Logo Upload - Only show for roleid 4 */}
-                    {Number(roleid) === 4 && (
+                    {[4, 5].includes(Number(roleid)) && (
                       <button
                         className={styles.cameraButton}
                         onClick={handleLogoClick}
@@ -1924,7 +1924,7 @@ const StartupDashboard = () => {
               <h2 className="text-xl font-bold mb-2">
                 Document Update Progress
               </h2>
-              {Number(roleid) === 4 && (
+              {[4, 5].includes(Number(roleid)) && (
                 <div style={{ display: "flex", gap: "0.5rem" }}>
                   <button
                     className={styles.buttonPrimary}
@@ -2177,7 +2177,7 @@ const StartupDashboard = () => {
 
           {/* Add Document Modal - Always render but control visibility */}
           <DocumentUploadModal
-            isModalOpen={isModalOpen && Number(roleid) === 4}
+            isModalOpen={isModalOpen && [4, 5].includes(Number(roleid))}
             setIsModalOpen={setIsModalOpen}
             incubateesrecid={incubateesrecid}
             usersrecid={usersrecid}
@@ -2188,7 +2188,7 @@ const StartupDashboard = () => {
         </div>
         <br />
         {/* Always render DocumentsTable but control visibility */}
-        <div style={{ display: Number(roleid) === 4 ? "block" : "none" }}>
+        <div style={{ display: [4, 5].includes(Number(roleid)) ? "block" : "none" }}>
           <DocumentsTable />
         </div>
 

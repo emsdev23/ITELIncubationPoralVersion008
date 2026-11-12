@@ -118,7 +118,17 @@ const LoginForm = () => {
           showConfirmButton: false,
         });
         setTimeout(() => navigate("/startup/Dashboard"), 1000);
-      } else if (roleid === "9") {
+      } else if (roleid === "5") {
+        Swal.fire({
+          icon: "success",
+          title: "Welcome Incubatee Manager!",
+          text: "Redirecting...",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+        setTimeout(() => navigate("/startup/Dashboard"), 1000);
+      }
+      else if (roleid === "9") {
         Swal.fire({
           icon: "success",
           title: "Welcome Mentor!",

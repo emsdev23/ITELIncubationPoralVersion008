@@ -51,7 +51,11 @@ function AppContent() {
 
     // If user is on login page but already authenticated, redirect to dashboard
     if (!!token && location.pathname === "/") {
-      navigate("/Incubation/Dashboard", { replace: true });
+      const role = Number(sessionStorage.getItem("roleid"));
+      const dashboard = [4, 5, 6].includes(role)
+        ? "/startup/Dashboard"
+        : "/Incubation/Dashboard";
+      navigate(dashboard, { replace: true });
     }
 
     // Initialize body class for sidebar state
@@ -88,7 +92,7 @@ function AppContent() {
             <Route
               path="/startup/Dashboard"
               element={
-                <ProtectedRoute allowedRoles={[0, 1, 3, 4, 7]}>
+                <ProtectedRoute allowedRoles={[0, 1, 3, 4, 5, 6, 7]}>
                   <StartupDashboard />
                 </ProtectedRoute>
               }

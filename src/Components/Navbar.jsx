@@ -206,7 +206,9 @@ const Navbar = () => {
   const isOperator = Number(roleid) === 3 || Number(sessionRoleid) === 3;
   const isDueDeeligence = Number(roleid) === 7 || Number(sessionRoleid) === 7;
   const SuperAdmin = Number(roleid) === 0 || Number(sessionRoleid) === 0;
-  const isIncubatee = Number(roleid) === 4 || Number(sessionRoleid) === 4;
+  const isIncubatee =
+    [4, 5, 6].includes(Number(roleid)) ||
+    [4, 5, 6].includes(Number(sessionRoleid));
   const isMentor = Number(roleid) === 9 || Number(sessionRoleid) === 9;
 
   const logedinProfile =
@@ -218,9 +220,11 @@ const Navbar = () => {
           ? "Due Deligence Inspector"
           : roleid === "4"
             ? "Incubatee"
-            : roleid === "9"
-              ? "Mentor"
-              : "Admin";
+            : roleid === "5"
+              ? "Incubatee Manager"
+              : roleid === "9"
+                ? "Mentor"
+                : "Admin";
 
   const getIconComponent = (iconName) => {
     const iconMap = {
@@ -401,7 +405,10 @@ const Navbar = () => {
       .filter((item) => {
         if (topNavPaths.includes(item.guiappspath)) return false;
         if (item.guiappspath === "/startup/Dashboard")
-          return Number(roleid) === 4 || Number(sessionRoleid) === 4;
+          return (
+            [4, 5, 6].includes(Number(roleid)) ||
+            [4, 5, 6].includes(Number(sessionRoleid))
+          );
         return item.appsreadaccess === 1;
       })
       .forEach((item) => {
@@ -523,7 +530,7 @@ const Navbar = () => {
           )}
 
           {/* Profile Dropdown for incubatees */}
-          {Number(roleid) === 4 && (
+          {[4, 5, 6].includes(Number(roleid)) && (
             <div className={styles.profileDropdown} ref={profileDropdownRef}>
               <button
                 className={styles.profileButton}
@@ -553,7 +560,7 @@ const Navbar = () => {
           )}
 
           {/* Profile for non-incubatees */}
-          {Number(roleid) !== 4 && (
+          {![4, 5, 6].includes(Number(roleid)) && (
             <div className={styles.profileInfo}>
               <CircleUserRound size={20} />
               <span>{logedinProfile}</span>
@@ -760,11 +767,11 @@ const Navbar = () => {
         userid={userid}
       />
       <ChangePasswordModal
-        isOpen={isChangePasswordOpen && Number(roleid) === 4}
+        isOpen={isChangePasswordOpen && [4, 5, 6].includes(Number(roleid))}
         onClose={() => setIsChangePasswordOpen(false)}
       />
       <ContactModal
-        isOpen={isContactModalOpen && Number(roleid) === 4}
+        isOpen={isContactModalOpen && [4, 5, 6].includes(Number(roleid))}
         onClose={() => setIsContactModalOpen(false)}
         userId={Number(userid)}
         incuserid={incuserid}
