@@ -388,6 +388,7 @@ export default function DocSubCatTable() {
       params.append("docsubcatscatrecid", formData.docsubcatscatrecid);
       if (editSubCat) {
         params.append("docsubcatmodifiedby", userId || "1");
+        params.append("docsubcatadminState", editSubCat.docsubcatadminstate);
       } else {
         params.append("docsubcatcreatedby", userId || "1");
         params.append("docsubcatmodifiedby", userId || "1");
